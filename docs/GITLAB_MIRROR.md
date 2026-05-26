@@ -32,4 +32,13 @@ hutao fetch upstream
 # 按需 cherry-pick / merge
 ```
 
-当前镜像基线见 `package.json` 的 `version` 字段。
+当前镜像基线见根目录 `package.json` 的 `version` 字段。
+
+## 同仓 Candystorm 组件（芬格自研）
+
+| 目录 | 说明 |
+|------|------|
+| `candystorm-mcp/` | stdio MCP（IR、meta、genbot、`candystorm_exec` 等） |
+| `fg-candystorm-ir/` | Creator 扩展，HTTP `127.0.0.1:3921`（`/exec` 含场景进程 + open-url） |
+
+详见 [CANDYSTORM_MCP.md](./CANDYSTORM_MCP.md)。

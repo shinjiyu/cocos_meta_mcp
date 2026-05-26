@@ -1,0 +1,16 @@
+{
+    "$schema": "https://schemastore.azurewebsites.net/schemas/json/tsconfig.json",
+    "compilerOptions": {
+        "target": "ES2017",
+        "module": "CommonJS",
+        "moduleResolution": "node",
+        "inlineSourceMap": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "resolveJsonModule": true,
+        "outDir": "./dist",
+        "rootDir": "./source",
+        "types": ["node", "@cocos/creator-types/editor"]
+    }
+}
