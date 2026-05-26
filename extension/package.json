@@ -1,0 +1,36 @@
+{
+    "$schema": "./@types/schema/package/index.json",
+    "package_version": 2,
+    "name": "fg-cocosmcp",
+    "version": "1.0.0",
+    "description": "cocosmcp HTTP bridge for Creator (IR meta, genbot, exec)",
+    "author": "h5_game_sh_tpe",
+    "editor": ">=3.8.8",
+    "main": "./dist/main.js",
+    "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "watch": "tsc -p tsconfig.json -w"
+    },
+    "devDependencies": {
+        "@cocos/creator-types": "^3.8.6",
+        "@types/node": "^18.17.1",
+        "typescript": "^5.9.3"
+    },
+    "contributions": {
+        "scene": {
+            "script": "./dist/scene.js"
+        },
+        "menu": [
+            {
+                "path": "芬格工具人/cocosmcp",
+                "label": "刷新 IR 资源并生成 meta",
+                "message": "refresh-ir-meta"
+            }
+        ],
+        "messages": {
+            "refresh-ir-meta": {
+                "methods": ["refreshIrMeta"]
+            }
+        }
+    }
+}

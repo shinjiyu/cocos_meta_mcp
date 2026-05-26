@@ -1,0 +1,15 @@
+{
+    "name": "cocosmcp",
+    "version": "1.0.0",
+    "private": true,
+    "description": "cocosmcp stdio MCP: IR/meta sync + genbot + Creator exec",
+    "type": "module",
+    "main": "index.mjs",
+    "scripts": {
+        "start": "node index.mjs"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.12.1",
+        "zod": "^3.24.2"
+    }
+}
