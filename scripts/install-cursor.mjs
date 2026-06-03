@@ -114,7 +114,6 @@ function buildServers({ repo, projectRoot, irRoot, profile }) {
 
     const pluginEnv = {
         ...baseEnv,
-        COCOSMCP_PLUGINS: "asset-meta,asset-sync",
         COCOSMCP_RECIPE_LAYER: "2",
     };
 

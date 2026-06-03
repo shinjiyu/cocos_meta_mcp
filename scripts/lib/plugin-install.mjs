@@ -10,6 +10,100 @@ import {
 
 export const NPM_BUNDLED_PLUGINS = ["asset-meta", "asset-sync"];
 
+export function packageLoadConfigPath(targetPkgRoot = packageRoot()) {
+    return path.join(targetPkgRoot, "mcp", "plugins", "load.json");
+}
+
+export function readPackageLoadConfig(targetPkgRoot = packageRoot()) {
+    const file = packageLoadConfigPath(targetPkgRoot);
+    if (!fs.existsSync(file)) {
+        return { version: 1, enabled: [...NPM_BUNDLED_PLUGINS], configPath: file };
+    }
+    try {
+        const raw = readJsonFile(file, { version: 1, enabled: [] });
+        if (Array.isArray(raw.enabled)) {
+            return { version: raw.version ?? 1, enabled: raw.enabled.filter(Boolean), configPath: file };
+        }
+        return { version: 1, enabled: [...NPM_BUNDLED_PLUGINS], configPath: file, error: "missing enabled[]" };
+    } catch {
+        return { version: 1, enabled: [...NPM_BUNDLED_PLUGINS], configPath: file, error: "invalid load.json" };
+    }
+}
+
+export function updatePackageLoadConfig(targetPkgRoot, pluginIds, { dryRun = false } = {}) {
+    const current = readPackageLoadConfig(targetPkgRoot);
+    const enabled = new Set(current.enabled ?? []);
+    for (const id of NPM_BUNDLED_PLUGINS) {
+        enabled.add(id);
+    }
+    for (const id of pluginIds) {
+        enabled.add(id);
+    }
+    const next = {
+        version: 1,
+        enabled: [...enabled],
+        updatedAt: new Date().toISOString(),
+    };
+    if (!dryRun) {
+        writeJsonFile(current.configPath, next);
+    }
+    return { configPath: current.configPath, enabled: next.enabled, changed: true };
+}
+
+function isCocosMetaMcpServer(server, targetPkgRoot) {
+    if (!server || typeof server !== "object") {
+        return false;
+    }
+    if (server.command === "cocos-meta-mcp") {
+        return true;
+    }
+    const args = server.args ?? [];
+    const indexPath = path.join(targetPkgRoot, "mcp", "index.mjs").replace(/\\/g, "/");
+    return args.some((a) => String(a).replace(/\\/g, "/") === indexPath);
+}
+
+/** Remove legacy COCOSMCP_PLUGINS from Cursor mcp.json (plugin list lives in load.json). */
+export function stripCursorPluginEnv({
+    target = "global",
+    projectRoot,
+    configPath,
+    targetPkgRoot = packageRoot(),
+    dryRun = false,
+} = {}) {
+    const file =
+        configPath ??
+        (target === "project"
+            ? cursorProjectMcpConfigPath(projectRoot)
+            : cursorGlobalMcpConfigPath());
+
+    if (!fs.existsSync(file)) {
+        return { configPath: file, updatedServers: [], changed: false };
+    }
+
+    const cfg = readJsonFile(file, { mcpServers: {} });
+    cfg.mcpServers = cfg.mcpServers ?? {};
+
+    const updatedServers = [];
+    for (const [name, server] of Object.entries(cfg.mcpServers)) {
+        if (!isCocosMetaMcpServer(server, targetPkgRoot)) {
+            continue;
+        }
+        if (server.env?.COCOSMCP_PLUGINS) {
+            delete server.env.COCOSMCP_PLUGINS;
+            updatedServers.push(name);
+        }
+    }
+
+    if (!updatedServers.length) {
+        return { configPath: file, updatedServers, changed: false };
+    }
+
+    if (!dryRun) {
+        writeJsonFile(file, cfg);
+    }
+    return { configPath: file, updatedServers, changed: true };
+}
+
 export function resolvePluginsSource(fromPath) {
     const resolved = path.resolve(fromPath);
     const nested = path.join(resolved, "mcp", "plugins");
@@ -66,6 +160,7 @@ export function discoverPluginIds(pluginsDir, { ids = null, includeBundled = fal
 
 export function listInstalledPlugins(targetPkgRoot = packageRoot()) {
     const pluginsDir = path.join(targetPkgRoot, "mcp", "plugins");
+    const loadCfg = readPackageLoadConfig(targetPkgRoot);
     if (!fs.existsSync(pluginsDir)) {
         return [];
     }
@@ -79,6 +174,7 @@ export function listInstalledPlugins(targetPkgRoot = packageRoot()) {
                 id: d.name,
                 valid: check.ok,
                 bundled: NPM_BUNDLED_PLUGINS.includes(d.name),
+                enabled: loadCfg.enabled.includes(d.name),
                 error: check.ok ? undefined : check.error,
                 name: check.manifest?.name,
                 tools: check.manifest?.tools ?? [],
@@ -175,110 +271,26 @@ export function installPlugins({
     return { installed, skipped, unchanged, targetPkgRoot, sourcePluginsDir };
 }
 
-export function parsePluginsEnv(raw) {
-    return (raw ?? "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-}
-
-export function mergePluginIds(existingIds, newIds) {
-    const merged = [...NPM_BUNDLED_PLUGINS];
-    for (const id of [...parsePluginsEnv(existingIds), ...newIds]) {
-        if (!merged.includes(id)) {
-            merged.push(id);
-        }
-    }
-    return merged;
-}
-
-function isCocosMetaMcpServer(server, targetPkgRoot) {
-    if (!server || typeof server !== "object") {
-        return false;
-    }
-    if (server.command === "cocos-meta-mcp") {
-        return true;
-    }
-    const args = server.args ?? [];
-    const indexPath = path.join(targetPkgRoot, "mcp", "index.mjs").replace(/\\/g, "/");
-    return args.some((a) => String(a).replace(/\\/g, "/") === indexPath);
-}
-
-/**
- * Merge plugin ids into Cursor mcp.json for cocos-meta-mcp servers.
- * @returns {{ configPath: string, updatedServers: string[] }}
- */
-export function updateCursorMcpPlugins({
-    pluginIds,
-    target = "global",
-    projectRoot,
-    configPath,
-    targetPkgRoot = packageRoot(),
-    dryRun = false,
-}) {
-    const file =
-        configPath ??
-        (target === "project"
-            ? cursorProjectMcpConfigPath(projectRoot)
-            : cursorGlobalMcpConfigPath());
-
-    const cfg = readJsonFile(file, { mcpServers: {} });
-    cfg.mcpServers = cfg.mcpServers ?? {};
-
-    const updatedServers = [];
-    for (const [name, server] of Object.entries(cfg.mcpServers)) {
-        if (!isCocosMetaMcpServer(server, targetPkgRoot)) {
-            continue;
-        }
-        server.env = server.env ?? {};
-        const next = mergePluginIds(server.env.COCOSMCP_PLUGINS, pluginIds);
-        const prev = server.env.COCOSMCP_PLUGINS ?? "";
-        const nextStr = next.join(",");
-        if (prev !== nextStr) {
-            server.env.COCOSMCP_PLUGINS = nextStr;
-            updatedServers.push(name);
-        }
-        if (!server.env.COCOSMCP_RECIPE_LAYER) {
-            server.env.COCOSMCP_RECIPE_LAYER = "2";
-            if (!updatedServers.includes(name)) {
-                updatedServers.push(name);
-            }
-        }
-    }
-
-    if (!updatedServers.length) {
-        return { configPath: file, updatedServers, changed: false };
-    }
-
-    if (!dryRun) {
-        writeJsonFile(file, cfg);
-    }
-    return { configPath: file, updatedServers, changed: true };
-}
-
 export function pluginInstallUsage() {
     return `Usage: cocos-meta-mcp plugin <command> [options]
 
 Commands:
-  list      List plugins in the installed cocos-meta-mcp package
-  install   Validate, copy/replace plugins and update Cursor mcp.json
+  list      List plugins and load.json enabled state
+  install   Validate, copy/replace plugins; update mcp/plugins/load.json
 
 Install options:
   --from <path>           Source repo, mcp/plugins dir, or single plugin dir (default: cwd)
   --ids <a,b,c>           Plugin ids to install (default: all non-bundled under source)
   --include-bundled       Also copy asset-meta / asset-sync from source
-  --target <global|project>  mcp.json target (default: global)
-  --project-root <path>   Required when --target project
-  --config <path>         Override mcp.json path
-  --no-cursor             Skip updating Cursor mcp.json
   --force                 Replace even when content unchanged
   --dry-run               Print actions only
   -h, --help
 
+Plugin enable list: {npm package}/mcp/plugins/load.json (not Cursor mcp.json)
+
 Examples:
   cocos-meta-mcp plugin list
-  cocos-meta-mcp plugin install --from D:/path/to/cocos-meta-mcp-repo
-  cocos-meta-mcp plugin install --from ./mcp/plugins/my-plugin
+  cocos-meta-mcp plugin install --from D:/path/to/repo
   cocos-meta-mcp plugin install --from . --ids my-plugin
 `;
 }
@@ -289,8 +301,6 @@ export function parsePluginCliArgs(argv) {
         from: process.cwd(),
         ids: null,
         includeBundled: false,
-        target: "global",
-        updateCursor: true,
         dryRun: false,
         force: false,
     };
@@ -320,25 +330,13 @@ export function parsePluginCliArgs(argv) {
             opts.force = true;
         } else if (a === "--include-bundled") {
             opts.includeBundled = true;
-        } else if (a === "--no-cursor") {
-            opts.updateCursor = false;
         } else if (a === "--from") {
             opts.from = argv[++i];
         } else if (a === "--ids") {
             opts.ids = argv[++i].split(",").map((s) => s.trim()).filter(Boolean);
-        } else if (a === "--target") {
-            opts.target = argv[++i];
-        } else if (a === "--project-root") {
-            opts.projectRoot = argv[++i];
-        } else if (a === "--config") {
-            opts.config = argv[++i];
         } else {
             throw new Error(`Unknown argument: ${a}`);
         }
-    }
-
-    if (opts.target === "project" && !opts.projectRoot && !opts.config) {
-        throw new Error("--project-root is required when --target project");
     }
 
     return opts;
@@ -360,10 +358,22 @@ export function runPluginInstallCli(argv) {
     }
 
     const targetPkgRoot = packageRoot();
+    const loadCfg = readPackageLoadConfig(targetPkgRoot);
 
     if (opts.command === "list") {
         const plugins = listInstalledPlugins(targetPkgRoot);
-        console.log(JSON.stringify({ package: targetPkgRoot, plugins }, null, 2));
+        console.log(
+            JSON.stringify(
+                {
+                    package: targetPkgRoot,
+                    loadConfig: loadCfg.configPath,
+                    enabled: loadCfg.enabled,
+                    plugins,
+                },
+                null,
+                2,
+            ),
+        );
         return;
     }
 
@@ -377,6 +387,7 @@ export function runPluginInstallCli(argv) {
     });
 
     const installedIds = result.installed.map((p) => p.id);
+    const idsToEnable = installedIds.length ? installedIds : result.unchanged.map((p) => p.id);
 
     if (opts.dryRun) {
         console.log(JSON.stringify({ dryRun: true, ...result }, null, 2));
@@ -405,24 +416,17 @@ export function runPluginInstallCli(argv) {
         process.exit(1);
     }
 
-    const idsForCursor = installedIds.length ? installedIds : result.unchanged.map((p) => p.id);
+    if (idsToEnable.length) {
+        const load = updatePackageLoadConfig(targetPkgRoot, idsToEnable, { dryRun: opts.dryRun });
+        const msg = opts.dryRun ? "[dry-run] would update" : "updated";
+        console.error(`[plugin install] ${msg} ${load.configPath}`);
+        console.error(`  enabled: ${load.enabled.join(", ")}`);
+    }
 
-    if (opts.updateCursor && idsForCursor.length) {
-        const cursor = updateCursorMcpPlugins({
-            pluginIds: idsForCursor,
-            target: opts.target,
-            projectRoot: opts.projectRoot,
-            configPath: opts.config,
-            targetPkgRoot,
-            dryRun: opts.dryRun,
-        });
-        if (cursor.changed) {
-            const msg = opts.dryRun ? "[dry-run] would update" : "updated";
-            console.error(`[plugin install] ${msg} ${cursor.configPath}: ${cursor.updatedServers.join(", ")}`);
-            console.error(`  COCOSMCP_PLUGINS merged with: ${idsForCursor.join(", ")}`);
-        } else if (!opts.dryRun) {
-            console.error(`[plugin install] Cursor mcp.json unchanged (no cocos-meta-mcp server or plugins already set)`);
-        }
+    const stripped = stripCursorPluginEnv({ targetPkgRoot, dryRun: opts.dryRun });
+    if (stripped.changed) {
+        const msg = opts.dryRun ? "[dry-run] would remove COCOSMCP_PLUGINS from" : "removed COCOSMCP_PLUGINS from";
+        console.error(`[plugin install] ${msg} ${stripped.configPath}: ${stripped.updatedServers.join(", ")}`);
     }
 
     if (!opts.dryRun) {

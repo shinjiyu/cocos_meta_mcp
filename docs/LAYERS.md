@@ -12,15 +12,19 @@ Plugins        全量安装到 {工程}/.cocosmcp/installed/{id}/
 
 ```text
 {工程}/.cocosmcp/
-  project.json              # 最近检测到的 Cocos 版本
-  plugins.json                # 启用状态 + 版本元数据
+  project.json
+  plugins.json              # 工程级启用（可选，与 load.json 合并）
   installed/
-    genbot/
-      manifest.json           # 含 cocosCreatorVersion、toolsVersioned
-      index.mjs               # 从 mcp/plugins/ 复制的副本
     asset-meta/
-  recipes/                    # 提升的 recipe 脚本
+      manifest.json
+      index.mjs
+  recipes/
   registry.json
+
+{cocos-meta-mcp 包}/mcp/plugins/
+  load.json                   # 包级启用列表（plugin install 维护）
+  asset-meta/
+  my-plugin/
 ```
 
 `plugin_disable` **只卸 MCP tool**，**不删** `installed/` 目录。
@@ -49,7 +53,7 @@ Plugins        全量安装到 {工程}/.cocosmcp/installed/{id}/
 | 变量 | 默认 | 说明 |
 |------|------|------|
 | `COCOSMCP_RECIPE_LAYER` | `2` | `0`=仅 exec；`1`=+recipe/插件管理；`2`=+promote（**默认**） |
-| `COCOSMCP_PLUGINS` | 空 | 启动时全量安装并加载 |
+| `COCOSMCP_PLUGINS` | — | **已废弃**；用 `mcp/plugins/load.json` |
 | `COCOSMCP_TOOL_PROFILE=full` | — | 全插件 + recipe L2 |
 
 ## Recipe 层工具（L1+）

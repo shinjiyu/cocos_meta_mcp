@@ -11,27 +11,43 @@ Creator 扩展见 [`INSTALL.md`](INSTALL.md)。
 
 ---
 
-## 一条命令安装（推荐）
+## 启用哪些插件：配置文件（不在 mcp.json）
 
-在**插件源码所在仓库**或任意目录执行：
+| 层级 | 文件 | 作用 |
+|------|------|------|
+| **MCP 包** | `{cocos-meta-mcp}/mcp/plugins/load.json` | 全局启用列表（`plugin install` 维护） |
+| **工程**（可选） | `{工程}/.cocosmcp/plugins.json` | 工程级追加 / 覆盖 |
+
+**Cursor `mcp.json` 只负责启动 MCP**，不写插件 id 列表。
+
+`load.json` 示例：
+
+```json
+{
+  "version": 1,
+  "enabled": ["asset-meta", "asset-sync", "my-plugin"]
+}
+```
+
+---
+
+## 一条命令安装（推荐）
 
 ```bash
 cocos-meta-mcp plugin install --from D:/path/to/repo-with-mcp-plugins
 ```
 
-会自动完成：
+会自动：
 
-1. **检查** — 每个插件须有 `manifest.json` + `index.mjs`
-2. **拷贝/替换** — 写入当前 `cocos-meta-mcp` 包的 `mcp/plugins/{id}/`（npm 全局安装即全局包目录）
-3. **更新 Cursor** — 合并 `%USERPROFILE%\.cursor\mcp.json` 里 `cocos-meta-mcp` 相关项的 `COCOSMCP_PLUGINS`（并补 `COCOSMCP_RECIPE_LAYER=2`）
-
-常用选项：
+1. **检查** — `manifest.json` + `index.mjs`
+2. **拷贝/替换** — 写入 `{npm 包}/mcp/plugins/{id}/`
+3. **更新 `load.json`** — 合并 `enabled` 列表
+4. **清理 mcp.json** — 移除旧的 `COCOSMCP_PLUGINS`（若存在）
 
 ```bash
 cocos-meta-mcp plugin list
+cocos-meta-mcp plugin install --from .
 cocos-meta-mcp plugin install --from . --ids my-plugin
-cocos-meta-mcp plugin install --from ./mcp/plugins/my-plugin
-cocos-meta-mcp plugin install --from . --no-cursor    # 只拷插件，不改 mcp.json
 cocos-meta-mcp plugin install --from . --dry-run
 ```
 
@@ -39,74 +55,41 @@ cocos-meta-mcp plugin install --from . --dry-run
 
 ---
 
-## 安装新插件（对照表）
-
-| 你要装的 | 怎么做 |
-|----------|--------|
-| **npm 自带**（`asset-meta`、`asset-sync`） | `cocos-meta-mcp setup` 已默认启用 |
-| **自研插件** | `cocos-meta-mcp plugin install --from <含 mcp/plugins 的仓库>` |
-| **只启用、不拷文件**（插件已在包里） | 手动改 `COCOSMCP_PLUGINS`，或 Agent 调用 `cocosmcp_plugin_install` |
-
-MCP 启动时会把插件**全量复制**到 `{工程}/.cocosmcp/installed/{id}/` 再加载 tool。
-
----
-
 ## 编写新插件
 
-在 `mcp/plugins/{id}/` 下至少包含：
-
 ```text
-manifest.json    # id、cocosVersion、tools 列表
-index.mjs        # export function register(server, ctx) { ... }
+mcp/plugins/my-plugin/
+  manifest.json
+  index.mjs
 ```
 
-`manifest.json` 示例：
+参考 `mcp/plugins/asset-meta/`。写好之后：
 
-```json
-{
-  "id": "my-plugin",
-  "name": "My Plugin",
-  "description": "What it does",
-  "cocosVersion": "3.8.*",
-  "tools": ["cocosmcp_my_tool"]
-}
+```bash
+cocos-meta-mcp plugin install --from .
 ```
-
-参考 `mcp/plugins/asset-meta/`。写好之后执行上面的 `plugin install --from`。
 
 ---
 
-## 工程内 `plugins.json`（可选）
+## 工程级追加（可选）
 
-路径：`{工程}/.cocosmcp/plugins.json`，与 `COCOSMCP_PLUGINS` **合并**启用。见 `examples/cocosmcp.plugins.example.json`。
-
-插件仍须先出现在 MCP 包的 `mcp/plugins/`（`plugin install` 会写入）。
+`{工程}/.cocosmcp/plugins.json` 与 `load.json` **合并**启用。见 `examples/cocosmcp.plugins.example.json`。
 
 ---
 
-## Agent 运行时安装
+## Agent 运行时
 
-recipe 层默认开启时，Agent 可调用 `cocosmcp_plugin_list` / `cocosmcp_plugin_install` 等（前提：插件已在 MCP 包 builtin 目录）。
+recipe 层默认开启时，可用 `cocosmcp_plugin_install` 等（插件须已在 MCP 包 `mcp/plugins/`）。
 
 ---
 
 ## 验证
 
-1. Creator 打开工程，扩展 **cocos-meta-mcp** 已启用  
-2. `cocos-meta-mcp plugin list` 能看到新插件且 `valid: true`  
-3. Cursor MCP tool 列表出现对应 tool  
-
----
-
-## 安装后目录
-
-```text
-{工程}/.cocosmcp/
-  plugins.json
-  installed/
-    asset-meta/
-    my-plugin/
+```bash
+cocos-meta-mcp plugin list
 ```
+
+`enabled: true` 且 `valid: true` 即 OK。
 
 ---
 
@@ -114,5 +97,4 @@ recipe 层默认开启时，Agent 可调用 `cocosmcp_plugin_list` / `cocosmcp_p
 
 - [`INSTALL.md`](INSTALL.md)
 - [`LAYERS.md`](LAYERS.md)
-- [`RECIPES.md`](RECIPES.md)
 - [`NPM.md`](NPM.md)

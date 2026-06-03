@@ -1,6 +1,6 @@
 {
     "name": "cocos-meta-mcp",
-    "version": "2.1.7",
+    "version": "2.1.8",
     "description": "Self-evolving MCP for Cocos Creator — stdio server, project extension, and Cursor setup (recipe promote)",
     "type": "module",
     "main": "./mcp/index.mjs",
@@ -22,6 +22,7 @@
         "mcp/plugins/asset-meta",
         "mcp/plugins/asset-sync",
         "mcp/plugins/load-manifest.mjs",
+        "mcp/plugins/load.json",
         "mcp/scripts",
         "mcp/README.md",
         "extension/dist",

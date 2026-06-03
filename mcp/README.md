@@ -28,7 +28,7 @@ cd mcp && npm install
 
 | **Recipe L2** | `COCOSMCP_RECIPE_LAYER=2` | + promote/demote/unregister、恢复 promoted |
 
-| **Plugins** | `COCOSMCP_PLUGINS` 或 `.cocosmcp/plugins.json` | 默认 `asset-meta`、`asset-sync`；可追加自研插件 |
+| **Plugins** | `mcp/plugins/load.json` + `.cocosmcp/plugins.json` | 默认 `asset-meta`、`asset-sync`；`plugin install` 写 load.json |
 
 
 

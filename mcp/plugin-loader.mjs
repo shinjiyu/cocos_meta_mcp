@@ -13,6 +13,8 @@ import { versionedToolName } from "./tool-naming.mjs";
 import { MCP_ROOT } from "./context.mjs";
 
 const BUILTIN_PLUGINS_DIR = path.join(MCP_ROOT, "plugins");
+const PACKAGE_LOAD_CONFIG = path.join(BUILTIN_PLUGINS_DIR, "load.json");
+const DEFAULT_BUNDLED_PLUGINS = ["asset-meta", "asset-sync"];
 const loaded = new Map();
 
 function installedRoot(projectRoot) {
@@ -21,6 +23,25 @@ function installedRoot(projectRoot) {
 
 function installedPluginDir(projectRoot, pluginId) {
     return path.join(installedRoot(projectRoot), pluginId);
+}
+
+function readPackageLoadConfig() {
+    if (!fs.existsSync(PACKAGE_LOAD_CONFIG)) {
+        return { version: 1, enabled: [...DEFAULT_BUNDLED_PLUGINS] };
+    }
+    try {
+        const raw = JSON.parse(fs.readFileSync(PACKAGE_LOAD_CONFIG, "utf8"));
+        if (Array.isArray(raw.enabled)) {
+            return { version: raw.version ?? 1, enabled: raw.enabled.filter(Boolean) };
+        }
+        return { version: 1, enabled: [...DEFAULT_BUNDLED_PLUGINS], error: "load.json missing enabled[]" };
+    } catch {
+        return { version: 1, enabled: [...DEFAULT_BUNDLED_PLUGINS], error: "invalid load.json" };
+    }
+}
+
+export function packageLoadConfigPath(mcpRoot = MCP_ROOT) {
+    return path.join(mcpRoot, "plugins", "load.json");
 }
 
 function pluginsConfigPath(projectRoot) {
@@ -149,17 +170,30 @@ export function resolveEnabledPluginIds(projectRoot) {
         return listAvailablePlugins(projectRoot).map((p) => p.id);
     }
 
-    const fromEnv = (process.env.COCOSMCP_PLUGINS ?? "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
+    const ids = new Set();
+
+    for (const id of readPackageLoadConfig().enabled ?? []) {
+        ids.add(id);
+    }
 
     const cfg = readPluginsConfig(projectRoot);
-    const fromFile = Object.entries(cfg.plugins ?? {})
-        .filter(([, rec]) => rec.enabled !== false)
-        .map(([id]) => id);
+    for (const [id, rec] of Object.entries(cfg.plugins ?? {})) {
+        if (rec.enabled !== false) {
+            ids.add(id);
+        }
+    }
 
-    return [...new Set([...fromEnv, ...fromFile])];
+    for (const id of (process.env.COCOSMCP_PLUGINS ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)) {
+        ids.add(id);
+    }
+
+    if (!ids.size) {
+        return [...DEFAULT_BUNDLED_PLUGINS];
+    }
+    return [...ids];
 }
 
 export function getLoadedPluginIds() {
