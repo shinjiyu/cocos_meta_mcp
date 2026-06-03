@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { z } from "zod";
 
 async function loadGenbotRunner() {
     try {
@@ -210,5 +211,15 @@ export function createContext() {
         metaStatus,
         fetchCreatorBridge,
         runGenbotGenerate,
+    };
+}
+
+/** Per-plugin ctx passed to register() — includes zod + manifest from catalog dir. */
+export function createPluginContext(baseCtx, { manifest, genbotRunner = null }) {
+    return {
+        ...baseCtx,
+        z,
+        pluginManifest: manifest,
+        genbotRunner,
     };
 }

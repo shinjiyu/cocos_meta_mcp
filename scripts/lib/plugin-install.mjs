@@ -446,6 +446,6 @@ export function runPluginInstallCli(argv) {
     }
 
     if (!opts.dryRun) {
-        console.error("[plugin install] Restart Cursor to load new plugins.");
+        console.error("[plugin install] Reload MCP: Cursor Settings → MCP → disable then enable cocos-meta-mcp.");
     }
 }

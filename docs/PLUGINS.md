@@ -33,7 +33,7 @@ cocos-meta-mcp plugin list
 3. 更新 `load.json`
 4. 若曾写入 `mcp.json` 的 `COCOSMCP_PLUGINS`，自动清理
 
-重启 Cursor 生效。
+在 Cursor **MCP 设置里关闭再打开** `cocos-meta-mcp` 即可（不必重启整个 Cursor）。
 
 ---
 

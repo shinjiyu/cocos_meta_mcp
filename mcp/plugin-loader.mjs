@@ -10,7 +10,7 @@ import {
 } from "./cocos-version-range.mjs";
 import { cocosmcpDir, ensureDirs } from "./recipe-registry.mjs";
 import { versionedToolName } from "./tool-naming.mjs";
-import { MCP_ROOT } from "./context.mjs";
+import { MCP_ROOT, createPluginContext } from "./context.mjs";
 import {
     DEFAULT_BUNDLED_PLUGINS,
     migrateLegacyPluginsFromPackage,
@@ -353,30 +353,46 @@ export async function loadPlugin(server, ctx, pluginId) {
     const projectRoot = ctx.PROJECT_ROOT;
     await ensurePluginInstalled(projectRoot, pluginId, ctx);
 
+    const catalogDir = resolveCatalogPluginDir(pluginId, MCP_ROOT);
+    if (!catalogDir) {
+        throw new Error(`plugin not found in catalog: ${pluginId}`);
+    }
+
     const dest = installedPluginDir(projectRoot, pluginId);
-    const manifest = readManifestAt(dest, pluginId);
+    const manifest = readManifestAt(dest, pluginId) ?? readManifestAt(catalogDir, pluginId);
     if (!manifest || manifest.error) {
-        throw new Error(`installed plugin invalid: ${pluginId}`);
+        throw new Error(`plugin invalid: ${pluginId}`);
     }
 
     const slug = manifest.toolVersionSlug ?? manifest.cocosVersionSlug ?? "unknown";
-    ctx.versionedToolName = (baseName) => versionedToolName(slug, baseName);
-    ctx.cocosCreatorVersion = manifest.detectedCreatorVersion ?? manifest.cocosCreatorVersion;
-    ctx.cocosVersionSlug = slug;
-    ctx.cocosVersionSpec = manifest.cocosVersionSpec ?? getManifestVersionSpec(manifest);
+    const pluginCtx = createPluginContext(ctx, { manifest });
+    pluginCtx.versionedToolName = (baseName) => versionedToolName(slug, baseName);
+    pluginCtx.cocosCreatorVersion = manifest.detectedCreatorVersion ?? manifest.cocosCreatorVersion;
+    pluginCtx.cocosVersionSlug = slug;
+    pluginCtx.cocosVersionSpec = manifest.cocosVersionSpec ?? getManifestVersionSpec(manifest);
 
-    const modPath = pathToFileURL(path.join(dest, "index.mjs")).href;
+    if (pluginId === "genbot") {
+        try {
+            const href = pathToFileURL(path.join(MCP_ROOT, "genbot-runner.mjs")).href;
+            pluginCtx.genbotRunner = await import(href);
+        } catch {
+            pluginCtx.genbotRunner = null;
+        }
+    }
+
+    const modPath = pathToFileURL(path.join(catalogDir, "index.mjs")).href;
     const mod = await import(`${modPath}?v=${manifest.installedAt ?? Date.now()}`);
     if (typeof mod.register !== "function") {
         throw new Error(`plugin ${pluginId} missing register()`);
     }
 
-    const result = mod.register(server, ctx);
+    const result = mod.register(server, pluginCtx);
     loaded.set(pluginId, { ...result, cocosCreatorVersion: manifest.cocosCreatorVersion, toolsVersioned: result.toolNames });
     return {
         ok: true,
         pluginId,
-        installPath: dest,
+        installPath: installedPluginDir(projectRoot, pluginId),
+        catalogPath: catalogDir,
         cocosCreatorVersion: manifest.cocosCreatorVersion,
         toolNames: result.toolNames,
     };

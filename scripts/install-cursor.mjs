@@ -117,37 +117,26 @@ function buildServers({ repo, projectRoot, irRoot, profile }) {
         COCOSMCP_RECIPE_LAYER: "2",
     };
 
-    const minimal = {
-        cocosmcp: mcpServerBlock({
-            repo,
-            projectRoot: cwd,
-            env: { ...baseEnv, COCOSMCP_RECIPE_LAYER: "0" },
-        }),
-    };
-
     const workflow = {
-        ...minimal,
-        "cocosmcp-workflow": {
-            comment: "Asset / IR plugins (Creator 3.8.8)",
+        cocosmcp: {
+            comment: "CocosMetaMCP — recipe L2 + plugins (load.json)",
             ...mcpServerBlock({ repo, projectRoot: cwd, env: pluginEnv }),
         },
     };
 
     const admin = {
         ...workflow,
-        "cocosmcp-admin": {
-            comment: "Agent recipe L2 + plugins",
-            ...mcpServerBlock({
-                repo,
-                projectRoot: cwd,
-                env: { COCOSMCP_RECIPE_LAYER: "2", ...pluginEnv },
-            }),
-        },
     };
 
     switch (profile) {
         case "minimal":
-            return minimal;
+            return {
+                cocosmcp: mcpServerBlock({
+                    repo,
+                    projectRoot: cwd,
+                    env: { ...baseEnv, COCOSMCP_RECIPE_LAYER: "0" },
+                }),
+            };
         case "workflow":
             return workflow;
         case "admin":
@@ -159,9 +148,16 @@ function buildServers({ repo, projectRoot, irRoot, profile }) {
     }
 }
 
-function mergeMcpConfig(existing, servers) {
+const LEGACY_MCP_SERVER_KEYS = ["cocosmcp-workflow", "cocosmcp-admin"];
+
+function mergeMcpConfig(existing, servers, profile) {
     const next = { ...existing };
     next.mcpServers = { ...(existing.mcpServers ?? {}), ...servers };
+    if (profile === "workflow" || profile === "admin" || profile === "all") {
+        for (const key of LEGACY_MCP_SERVER_KEYS) {
+            delete next.mcpServers[key];
+        }
+    }
     return next;
 }
 
@@ -224,7 +220,7 @@ function main() {
             ? cursorProjectMcpConfigPath(opts.projectRoot)
             : cursorGlobalMcpConfigPath());
 
-    const merged = mergeMcpConfig(readJsonFile(configPath, {}), servers);
+    const merged = mergeMcpConfig(readJsonFile(configPath, {}), servers, opts.profile);
 
     if (opts.dryRun) {
         console.log(JSON.stringify(merged, null, 2));
@@ -234,7 +230,7 @@ function main() {
     writeJsonFile(configPath, merged);
     console.error(`[install-cursor] wrote ${configPath}`);
     console.error(`[install-cursor] profile=${opts.profile} servers=${Object.keys(servers).join(", ")}`);
-    console.error("[install-cursor] Restart Cursor (or reload MCP) to apply.");
+    console.error("[install-cursor] Reload MCP: Cursor Settings → MCP → disable then enable cocos-meta-mcp.");
 }
 
 main();

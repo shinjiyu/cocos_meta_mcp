@@ -47,7 +47,7 @@ Run inside your Cocos project directory to auto-detect the project root (omit `-
 
 ### Cursor
 
-Setup writes `%USERPROFILE%\.cursor\mcp.json` (Windows). Restart Cursor and confirm the MCP server is connected.
+Setup writes `%USERPROFILE%\.cursor\mcp.json` (Windows). In Cursor **MCP settings**, confirm connected (after config changes, disable then re-enable the server).
 
 Default **workflow** profile enables bundled plugins and recipe promote. Custom plugins: `cocos-meta-mcp plugin install --from <repo>`. See [`docs/PLUGINS.md`](docs/PLUGINS.md).
 

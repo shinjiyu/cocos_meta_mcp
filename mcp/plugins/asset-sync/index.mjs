@@ -1,11 +1,5 @@
-import { z } from "zod";
-import { loadManifest } from "../load-manifest.mjs";
-
-const manifest = loadManifest(import.meta.url);
-export { manifest };
-
 export function register(server, ctx) {
-    const { irRoot, runNodeScript, metaStatus } = ctx;
+    const { z, pluginManifest: manifest, irRoot, runNodeScript, metaStatus } = ctx;
     const t = (name) => (ctx.versionedToolName ? ctx.versionedToolName(name) : name);
     const ver = ctx.cocosCreatorVersion ?? "unknown";
     const handles = [];
