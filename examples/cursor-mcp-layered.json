@@ -14,7 +14,7 @@
       "args": ["D:/UGit/extension-tools/cocosmcp/mcp/index.mjs"],
       "cwd": "D:/UGit/proj-l-client-candy",
       "env": {
-        "COCOSMCP_PLUGINS": "asset-meta,asset-sync,ir-prefab",
+        "COCOSMCP_PLUGINS": "asset-meta,asset-sync",
         "COCOSMCP_IR_ROOT": "D:/svn/new_game/糖果风暴客户端资源/export/candystorm_ir"
       }
     },

@@ -28,7 +28,7 @@ cd mcp && npm install
 
 | **Recipe L2** | `COCOSMCP_RECIPE_LAYER=2` | + promote/demote/unregister、恢复 promoted |
 
-| **Plugins** | `COCOSMCP_PLUGINS` 或 `.cocosmcp/plugins.json` | asset-meta、asset-sync、ir-prefab |
+| **Plugins** | `COCOSMCP_PLUGINS` 或 `.cocosmcp/plugins.json` | asset-meta、asset-sync（公开）；ir-prefab、genbot 本地私有 |
 
 
 
@@ -42,7 +42,7 @@ mcp/plugins/
 
   asset-meta/    # 3 tools
   asset-sync/    # 1 tool
-  ir-prefab/     # 1 tool
+  ir-prefab/     # 1 tool (local only, not in npm)
   genbot/        # 2 tools (local only)
 
 ```
@@ -63,7 +63,7 @@ mcp/plugins/
 
 ```json
 
-{ "COCOSMCP_PLUGINS": "asset-meta,asset-sync,ir-prefab" }
+{ "COCOSMCP_PLUGINS": "asset-meta,asset-sync" }
 
 ```
 

@@ -16,13 +16,14 @@
 |---------|------|
 | `asset-meta` | .meta 检查 / 导入 / 刷新 |
 | `asset-sync` | 外部资源目录同步 |
-| `ir-prefab` | IR prefab 脚本 |
 
-`cocos-meta-mcp setup` **默认 profile=workflow**，会在 Cursor `mcp.json` 写入 `COCOSMCP_PLUGINS=asset-meta,asset-sync,ir-prefab`。
+`cocos-meta-mcp setup` **默认 profile=workflow**，会在 Cursor `mcp.json` 写入 `COCOSMCP_PLUGINS=asset-meta,asset-sync`。
 
 仅要 `cocosmcp_exec` 时可：`cocos-meta-mcp setup --cursor-profile minimal`
 
-**不包含**：`genbot` 插件（私有/本地）
+**不包含**（私有/本地，不进 npm）：`genbot`、`ir-prefab`
+
+插件安装详解：[`PLUGINS.md`](PLUGINS.md)
 
 ## 安装
 
@@ -51,7 +52,7 @@ cocos-meta-mcp setup cursor --project-root /path/to/cocos/project
       "command": "cocos-meta-mcp",
       "cwd": "/path/to/your/cocos/project",
       "env": {
-        "COCOSMCP_PLUGINS": "asset-meta,asset-sync,ir-prefab"
+        "COCOSMCP_PLUGINS": "asset-meta,asset-sync"
       }
     }
   }

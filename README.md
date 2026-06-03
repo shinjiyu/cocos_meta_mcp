@@ -47,6 +47,8 @@ npm run setup -- --project-root D:/path/to/your-cocos-project
 
 安装脚本写入 `%USERPROFILE%\.cursor\mcp.json`。重启 Cursor，在 MCP 设置中确认已连接。
 
+默认 **workflow** 会启用 MCP 插件 `asset-meta`、`asset-sync`，详见 [`docs/PLUGINS.md`](docs/PLUGINS.md)。
+
 ## 验证
 
 1. Creator 中启用 **cocos-meta-mcp**  
@@ -99,6 +101,7 @@ cocosmcp_promote_recipe ──► cocosmcp_r_{name}（独立 Tool，通知 Curso
 
 | 主题 | 链接 |
 |------|------|
+| **MCP 插件安装** | [`docs/PLUGINS.md`](docs/PLUGINS.md) |
 | Recipe / 提升详解 | [`docs/RECIPES.md`](docs/RECIPES.md) |
 | 分层架构与插件 | [`docs/LAYERS.md`](docs/LAYERS.md) |
 | 安装参数 | [`docs/INSTALL.md`](docs/INSTALL.md) |

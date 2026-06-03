@@ -57,6 +57,8 @@ Plugins        全量安装到 {工程}/.cocosmcp/installed/{id}/
 - `cocosmcp_plugin_list` / `cocosmcp_plugin_install` / `cocosmcp_plugin_enable` / `cocosmcp_plugin_disable`
 - `cocosmcp_register_recipe` / `cocosmcp_run_recipe` / …
 
+插件安装步骤见 [`PLUGINS.md`](PLUGINS.md)。
+
 ## plugins.json v2 示例
 
 ```json

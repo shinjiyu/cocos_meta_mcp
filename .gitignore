@@ -4,6 +4,7 @@ node_modules/
 Thumbs.db
 .cocosmcp/exec-audit.jsonl
 
-# genbot: local/private only, not in public repo
+# genbot / ir-prefab: local/private only, not in public repo or npm
 mcp/plugins/genbot/
+mcp/plugins/ir-prefab/
 mcp/genbot-runner.mjs

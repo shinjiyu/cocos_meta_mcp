@@ -11,7 +11,7 @@ function collectMjs(dir, out = []) {
     for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
         const full = path.join(dir, ent.name);
         if (ent.isDirectory()) {
-            if (ent.name === "node_modules" || ent.name === "genbot") {continue;}
+            if (ent.name === "node_modules" || ent.name === "genbot" || ent.name === "ir-prefab") {continue;}
             collectMjs(full, out);
         } else if (ent.name.endsWith(".mjs") && ent.name !== "genbot-runner.mjs" && ent.name !== "test-invoke.mjs") {
             out.push(full);

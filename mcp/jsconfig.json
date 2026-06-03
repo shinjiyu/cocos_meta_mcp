@@ -16,5 +16,5 @@
         "types": ["node"]
     },
     "include": ["**/*.mjs"],
-    "exclude": ["node_modules", "plugins/genbot/**", "genbot-runner.mjs", "test-invoke.mjs"]
+    "exclude": ["node_modules", "plugins/genbot/**", "plugins/ir-prefab/**", "genbot-runner.mjs", "test-invoke.mjs"]
 }

@@ -114,7 +114,7 @@ function buildServers({ repo, projectRoot, irRoot, profile }) {
 
     const pluginEnv = {
         ...baseEnv,
-        COCOSMCP_PLUGINS: "asset-meta,asset-sync,ir-prefab",
+        COCOSMCP_PLUGINS: "asset-meta,asset-sync",
     };
 
     const minimal = {

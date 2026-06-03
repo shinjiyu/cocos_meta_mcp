@@ -94,3 +94,9 @@ node scripts/install-extension.mjs --mode global-legacy
 **每个 Cocos 工程需各自安装一次**，或把 `extensions/cocos-meta-mcp` 提交进 Git 供团队共用。
 
 MCP 的 `cwd` 始终指向**当前打开的 Cocos 工程根**，与你在哪个工程里安装了扩展一致。
+
+## MCP 插件
+
+`setup` 默认启用 **asset-meta、asset-sync**（写入 Cursor `mcp.json` 的 `COCOSMCP_PLUGINS`）。
+
+详细说明（env、`plugins.json`、Agent 动态安装、本地私有插件）：[`PLUGINS.md`](PLUGINS.md)
