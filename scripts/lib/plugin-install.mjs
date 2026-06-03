@@ -7,47 +7,24 @@ import {
     readJsonFile,
     writeJsonFile,
 } from "./paths.mjs";
+import {
+    DEFAULT_BUNDLED_PLUGINS as NPM_BUNDLED_PLUGINS,
+    ensureUserPluginsHome,
+    mergeUserLoadConfig,
+    migrateLegacyPluginsFromPackage,
+    readUserLoadConfig,
+    userPluginsDir,
+    userPluginsHome,
+} from "../../mcp/user-plugins.mjs";
 
-export const NPM_BUNDLED_PLUGINS = ["asset-meta", "asset-sync"];
+export { NPM_BUNDLED_PLUGINS };
 
-export function packageLoadConfigPath(targetPkgRoot = packageRoot()) {
-    return path.join(targetPkgRoot, "mcp", "plugins", "load.json");
+export function readPackageLoadConfig() {
+    return readUserLoadConfig();
 }
 
-export function readPackageLoadConfig(targetPkgRoot = packageRoot()) {
-    const file = packageLoadConfigPath(targetPkgRoot);
-    if (!fs.existsSync(file)) {
-        return { version: 1, enabled: [...NPM_BUNDLED_PLUGINS], configPath: file };
-    }
-    try {
-        const raw = readJsonFile(file, { version: 1, enabled: [] });
-        if (Array.isArray(raw.enabled)) {
-            return { version: raw.version ?? 1, enabled: raw.enabled.filter(Boolean), configPath: file };
-        }
-        return { version: 1, enabled: [...NPM_BUNDLED_PLUGINS], configPath: file, error: "missing enabled[]" };
-    } catch {
-        return { version: 1, enabled: [...NPM_BUNDLED_PLUGINS], configPath: file, error: "invalid load.json" };
-    }
-}
-
-export function updatePackageLoadConfig(targetPkgRoot, pluginIds, { dryRun = false } = {}) {
-    const current = readPackageLoadConfig(targetPkgRoot);
-    const enabled = new Set(current.enabled ?? []);
-    for (const id of NPM_BUNDLED_PLUGINS) {
-        enabled.add(id);
-    }
-    for (const id of pluginIds) {
-        enabled.add(id);
-    }
-    const next = {
-        version: 1,
-        enabled: [...enabled],
-        updatedAt: new Date().toISOString(),
-    };
-    if (!dryRun) {
-        writeJsonFile(current.configPath, next);
-    }
-    return { configPath: current.configPath, enabled: next.enabled, changed: true };
+export function updatePackageLoadConfig(_targetPkgRoot, pluginIds, { dryRun = false } = {}) {
+    return mergeUserLoadConfig(pluginIds, { dryRun });
 }
 
 function isCocosMetaMcpServer(server, targetPkgRoot) {
@@ -62,7 +39,7 @@ function isCocosMetaMcpServer(server, targetPkgRoot) {
     return args.some((a) => String(a).replace(/\\/g, "/") === indexPath);
 }
 
-/** Remove legacy COCOSMCP_PLUGINS from Cursor mcp.json (plugin list lives in load.json). */
+/** Remove legacy COCOSMCP_PLUGINS from Cursor mcp.json. */
 export function stripCursorPluginEnv({
     target = "global",
     projectRoot,
@@ -159,27 +136,54 @@ export function discoverPluginIds(pluginsDir, { ids = null, includeBundled = fal
 }
 
 export function listInstalledPlugins(targetPkgRoot = packageRoot()) {
-    const pluginsDir = path.join(targetPkgRoot, "mcp", "plugins");
-    const loadCfg = readPackageLoadConfig(targetPkgRoot);
-    if (!fs.existsSync(pluginsDir)) {
-        return [];
-    }
-    return fs
-        .readdirSync(pluginsDir, { withFileTypes: true })
-        .filter((d) => d.isDirectory())
-        .map((d) => {
-            const dir = path.join(pluginsDir, d.name);
+    migrateLegacyPluginsFromPackage(path.join(targetPkgRoot, "mcp"));
+
+    const loadCfg = readUserLoadConfig();
+    const plugins = [];
+
+    const pkgPluginsDir = path.join(targetPkgRoot, "mcp", "plugins");
+    if (fs.existsSync(pkgPluginsDir)) {
+        for (const d of fs.readdirSync(pkgPluginsDir, { withFileTypes: true })) {
+            if (!d.isDirectory() || !NPM_BUNDLED_PLUGINS.includes(d.name)) {
+                continue;
+            }
+            const dir = path.join(pkgPluginsDir, d.name);
             const check = validatePluginDir(dir, d.name);
-            return {
+            plugins.push({
                 id: d.name,
                 valid: check.ok,
-                bundled: NPM_BUNDLED_PLUGINS.includes(d.name),
+                bundled: true,
+                source: "npm",
                 enabled: loadCfg.enabled.includes(d.name),
                 error: check.ok ? undefined : check.error,
                 name: check.manifest?.name,
                 tools: check.manifest?.tools ?? [],
-            };
-        });
+            });
+        }
+    }
+
+    const userDir = userPluginsDir();
+    if (fs.existsSync(userDir)) {
+        for (const d of fs.readdirSync(userDir, { withFileTypes: true })) {
+            if (!d.isDirectory()) {
+                continue;
+            }
+            const dir = path.join(userDir, d.name);
+            const check = validatePluginDir(dir, d.name);
+            plugins.push({
+                id: d.name,
+                valid: check.ok,
+                bundled: false,
+                source: "user",
+                enabled: loadCfg.enabled.includes(d.name),
+                error: check.ok ? undefined : check.error,
+                name: check.manifest?.name,
+                tools: check.manifest?.tools ?? [],
+            });
+        }
+    }
+
+    return plugins;
 }
 
 function copyDirReplace(src, dest) {
@@ -219,7 +223,7 @@ export function installPlugins({
     force = false,
 }) {
     const { pluginsDir: sourcePluginsDir, singleId } = resolvePluginsSource(sourceRoot);
-    const targetPluginsDir = path.join(targetPkgRoot, "mcp", "plugins");
+    const targetPluginsDir = userPluginsDir();
 
     const candidateIds =
         singleId && (!ids?.length || ids.includes(singleId))
@@ -239,6 +243,11 @@ export function installPlugins({
     const unchanged = [];
 
     for (const id of candidateIds) {
+        if (NPM_BUNDLED_PLUGINS.includes(id) && !includeBundled) {
+            skipped.push({ id, reason: "bundled plugin stays in npm package; use --include-bundled to copy" });
+            continue;
+        }
+
         const src = path.join(sourcePluginsDir, id);
         const dest = path.join(targetPluginsDir, id);
         const check = validatePluginDir(src, id);
@@ -263,30 +272,35 @@ export function installPlugins({
             continue;
         }
 
-        fs.mkdirSync(targetPluginsDir, { recursive: true });
+        ensureUserPluginsHome();
         copyDirReplace(src, dest);
         installed.push({ id, src, dest, action: "installed" });
     }
 
-    return { installed, skipped, unchanged, targetPkgRoot, sourcePluginsDir };
+    return { installed, skipped, unchanged, targetPluginsDir, userPluginsHome: userPluginsHome(), sourcePluginsDir };
 }
 
 export function pluginInstallUsage() {
+    const home = userPluginsHome();
     return `Usage: cocos-meta-mcp plugin <command> [options]
 
 Commands:
   list      List plugins and load.json enabled state
-  install   Validate, copy/replace plugins; update mcp/plugins/load.json
+  install   Copy plugins to user store; update load.json
+
+User plugin store (default): ${home}
+  plugins/     installed plugin dirs
+  load.json    enabled plugin ids
+
+Override store: COCOSMCP_USER_PLUGINS_HOME=/path
 
 Install options:
   --from <path>           Source repo, mcp/plugins dir, or single plugin dir (default: cwd)
-  --ids <a,b,c>           Plugin ids to install (default: all non-bundled under source)
-  --include-bundled       Also copy asset-meta / asset-sync from source
+  --ids <a,b,c>           Plugin ids (default: all non-bundled under source)
+  --include-bundled       Also copy asset-meta / asset-sync into user store
   --force                 Replace even when content unchanged
   --dry-run               Print actions only
   -h, --help
-
-Plugin enable list: {npm package}/mcp/plugins/load.json (not Cursor mcp.json)
 
 Examples:
   cocos-meta-mcp plugin list
@@ -358,16 +372,18 @@ export function runPluginInstallCli(argv) {
     }
 
     const targetPkgRoot = packageRoot();
-    const loadCfg = readPackageLoadConfig(targetPkgRoot);
+    migrateLegacyPluginsFromPackage(path.join(targetPkgRoot, "mcp"));
+    const loadCfg = readUserLoadConfig();
 
     if (opts.command === "list") {
         const plugins = listInstalledPlugins(targetPkgRoot);
         console.log(
             JSON.stringify(
                 {
-                    package: targetPkgRoot,
+                    userPluginsHome: userPluginsHome(),
                     loadConfig: loadCfg.configPath,
                     enabled: loadCfg.enabled,
+                    npmPackage: targetPkgRoot,
                     plugins,
                 },
                 null,
@@ -392,7 +408,7 @@ export function runPluginInstallCli(argv) {
     if (opts.dryRun) {
         console.log(JSON.stringify({ dryRun: true, ...result }, null, 2));
     } else {
-        console.error(`[plugin install] package: ${targetPkgRoot}`);
+        console.error(`[plugin install] user store: ${userPluginsHome()}`);
         if (result.installed.length) {
             for (const p of result.installed) {
                 console.error(`  installed ${p.id}`);
@@ -417,7 +433,7 @@ export function runPluginInstallCli(argv) {
     }
 
     if (idsToEnable.length) {
-        const load = updatePackageLoadConfig(targetPkgRoot, idsToEnable, { dryRun: opts.dryRun });
+        const load = mergeUserLoadConfig(idsToEnable, { dryRun: opts.dryRun });
         const msg = opts.dryRun ? "[dry-run] would update" : "updated";
         console.error(`[plugin install] ${msg} ${load.configPath}`);
         console.error(`  enabled: ${load.enabled.join(", ")}`);

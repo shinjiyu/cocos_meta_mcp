@@ -21,10 +21,11 @@ Plugins        全量安装到 {工程}/.cocosmcp/installed/{id}/
   recipes/
   registry.json
 
-{cocos-meta-mcp 包}/mcp/plugins/
-  load.json                   # 包级启用列表（plugin install 维护）
-  asset-meta/
-  my-plugin/
+{cocos-meta-mcp 包}/mcp/plugins/   # 仅 npm 内置 asset-meta、asset-sync
+
+{tmpdir}/cocos-meta-mcp/           # 自研插件（plugin install）
+  load.json
+  plugins/my-plugin/
 ```
 
 `plugin_disable` **只卸 MCP tool**，**不删** `installed/` 目录。

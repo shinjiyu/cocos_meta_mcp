@@ -11,10 +11,15 @@ import {
 import { cocosmcpDir, ensureDirs } from "./recipe-registry.mjs";
 import { versionedToolName } from "./tool-naming.mjs";
 import { MCP_ROOT } from "./context.mjs";
+import {
+    DEFAULT_BUNDLED_PLUGINS,
+    migrateLegacyPluginsFromPackage,
+    readUserLoadConfig,
+    resolveCatalogPluginDir,
+    userPluginsDir,
+} from "./user-plugins.mjs";
 
 const BUILTIN_PLUGINS_DIR = path.join(MCP_ROOT, "plugins");
-const PACKAGE_LOAD_CONFIG = path.join(BUILTIN_PLUGINS_DIR, "load.json");
-const DEFAULT_BUNDLED_PLUGINS = ["asset-meta", "asset-sync"];
 const loaded = new Map();
 
 function installedRoot(projectRoot) {
@@ -26,22 +31,11 @@ function installedPluginDir(projectRoot, pluginId) {
 }
 
 function readPackageLoadConfig() {
-    if (!fs.existsSync(PACKAGE_LOAD_CONFIG)) {
-        return { version: 1, enabled: [...DEFAULT_BUNDLED_PLUGINS] };
-    }
-    try {
-        const raw = JSON.parse(fs.readFileSync(PACKAGE_LOAD_CONFIG, "utf8"));
-        if (Array.isArray(raw.enabled)) {
-            return { version: raw.version ?? 1, enabled: raw.enabled.filter(Boolean) };
-        }
-        return { version: 1, enabled: [...DEFAULT_BUNDLED_PLUGINS], error: "load.json missing enabled[]" };
-    } catch {
-        return { version: 1, enabled: [...DEFAULT_BUNDLED_PLUGINS], error: "invalid load.json" };
-    }
+    return readUserLoadConfig();
 }
 
-export function packageLoadConfigPath(mcpRoot = MCP_ROOT) {
-    return path.join(mcpRoot, "plugins", "load.json");
+export function packageLoadConfigPath() {
+    return readUserLoadConfig().configPath;
 }
 
 function pluginsConfigPath(projectRoot) {
@@ -109,13 +103,18 @@ function setPluginRecord(projectRoot, pluginId, patch) {
 }
 
 export function listBuiltinPlugins() {
-    if (!fs.existsSync(BUILTIN_PLUGINS_DIR)) {return [];}
-    return fs
-        .readdirSync(BUILTIN_PLUGINS_DIR, { withFileTypes: true })
-        .filter((d) => d.isDirectory())
-        .map((d) => {
-            const manifest = readManifestAt(path.join(BUILTIN_PLUGINS_DIR, d.name), d.name);
-            return {
+    migrateLegacyPluginsFromPackage(MCP_ROOT);
+
+    const byId = new Map();
+
+    if (fs.existsSync(BUILTIN_PLUGINS_DIR)) {
+        for (const d of fs.readdirSync(BUILTIN_PLUGINS_DIR, { withFileTypes: true })) {
+            if (!d.isDirectory() || !DEFAULT_BUNDLED_PLUGINS.includes(d.name)) {
+                continue;
+            }
+            const dir = path.join(BUILTIN_PLUGINS_DIR, d.name);
+            const manifest = readManifestAt(dir, d.name);
+            byId.set(d.name, {
                 id: d.name,
                 source: "builtin",
                 name: manifest?.name ?? d.name,
@@ -124,8 +123,32 @@ export function listBuiltinPlugins() {
                 cocosVersionRange: manifest?.cocosVersionRange,
                 tools: manifest?.tools ?? [],
                 error: manifest?.error,
-            };
-        });
+            });
+        }
+    }
+
+    const userDir = userPluginsDir();
+    if (fs.existsSync(userDir)) {
+        for (const d of fs.readdirSync(userDir, { withFileTypes: true })) {
+            if (!d.isDirectory()) {
+                continue;
+            }
+            const dir = path.join(userDir, d.name);
+            const manifest = readManifestAt(dir, d.name);
+            byId.set(d.name, {
+                id: d.name,
+                source: "user",
+                name: manifest?.name ?? d.name,
+                description: manifest?.description,
+                cocosVersion: getManifestVersionSpec(manifest ?? {}),
+                cocosVersionRange: manifest?.cocosVersionRange,
+                tools: manifest?.tools ?? [],
+                error: manifest?.error,
+            });
+        }
+    }
+
+    return [...byId.values()];
 }
 
 export function listInstalledPlugins(projectRoot) {
@@ -201,7 +224,11 @@ export function getLoadedPluginIds() {
 }
 
 function builtinPluginDir(pluginId) {
-    return path.join(BUILTIN_PLUGINS_DIR, pluginId);
+    const dir = resolveCatalogPluginDir(pluginId, MCP_ROOT);
+    if (!dir) {
+        return path.join(BUILTIN_PLUGINS_DIR, pluginId);
+    }
+    return dir;
 }
 
 /** 全量复制插件到工程 .cocosmcp/installed/{id}/，写入 Cocos 版本与 versioned tool 名 */

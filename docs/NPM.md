@@ -19,7 +19,7 @@
 | `asset-meta` | .meta 检查 / 导入 / 刷新 |
 | `asset-sync` | 外部资源目录同步 |
 
-`cocos-meta-mcp setup` **默认 profile=workflow**，写入 `COCOSMCP_RECIPE_LAYER=2`。插件启用列表在 `mcp/plugins/load.json`（非 mcp.json）。
+`cocos-meta-mcp setup` **默认 profile=workflow**，写入 `COCOSMCP_RECIPE_LAYER=2`。插件启用列表在 **`{系统tmp}/cocos-meta-mcp/load.json`**，自研插件在同目录 `plugins/`（`npm update -g` 不会覆盖）。
 
 仅要 `cocosmcp_exec` 时可：`cocos-meta-mcp setup --cursor-profile minimal`
 
