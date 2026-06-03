@@ -15,6 +15,7 @@ Commands (optional):
   extension   Creator extension only
 
 Examples:
+  cocos-meta-mcp setup                              # auto-detect project from cwd
   cocos-meta-mcp setup --project-root D:/path/to/cocos/project
   cocos-meta-mcp setup --project-root D:/proj --cursor-profile workflow
   cocos-meta-mcp setup cursor --help
@@ -42,12 +43,12 @@ function runLegacy(scriptName, args) {
 export function runSetupCli(argv) {
     const cmd = argv[0];
 
-    if (!cmd || cmd === "-h" || cmd === "--help") {
+    if (cmd === "-h" || cmd === "--help") {
         setupUsage();
-        process.exit(cmd ? 0 : 1);
+        process.exit(0);
     }
 
-    if (cmd.startsWith("-") || cmd === "all") {
+    if (!cmd || cmd.startsWith("-") || cmd === "all") {
         const args = cmd === "all" ? argv.slice(1) : argv;
         runInstall(args);
         return;

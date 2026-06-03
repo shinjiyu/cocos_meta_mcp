@@ -1,6 +1,6 @@
 {
     "name": "cocos-meta-mcp",
-    "version": "2.1.1",
+    "version": "2.1.2",
     "description": "Cocos Creator MCP server (stdio) + fg-cocosmcp extension installer for Cursor",
     "type": "module",
     "main": "./mcp/index.mjs",
