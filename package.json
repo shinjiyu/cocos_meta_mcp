@@ -63,7 +63,7 @@
         "model-context-protocol",
         "cursor",
         "game-dev",
-        "plugin",
+        "plugin"
     ],
     "repository": {
         "type": "git",
