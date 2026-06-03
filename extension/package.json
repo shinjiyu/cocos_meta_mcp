@@ -1,11 +1,11 @@
 {
-    "$schema": "./@types/schema/package/index.json",
     "package_version": 2,
     "name": "fg-cocosmcp",
     "version": "1.0.0",
-    "description": "cocosmcp HTTP bridge for Creator (IR meta, genbot, exec)",
-    "author": "h5_game_sh_tpe",
-    "editor": ">=3.8.8",
+    "title": "fg-cocosmcp",
+    "description": "cocosmcp HTTP bridge for Creator (MCP exec, IR meta, refresh)",
+    "author": "cocos-meta-mcp",
+    "editor": ">=3.8.0",
     "main": "./dist/main.js",
     "scripts": {
         "build": "tsc -p tsconfig.json",

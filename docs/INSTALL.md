@@ -1,83 +1,96 @@
 # 安装指南
 
+参考 [Cocos Creator 3.8 — 安装与分享](https://docs.cocos.com/creator/3.8/manual/zh/editor/extension/install.html)：**扩展安装在工程内** `{工程}/extensions/`，在 **扩展管理器 → 项目** 标签启用。
+
 ## 一键安装（推荐）
 
-```powershell
-cd D:\UGit\extension-tools\cocosmcp
-.\scripts\install.ps1 -ProjectRoot D:\UGit\your-cocos-project
+```bash
+cd D:/UGit/extension-tools/cocosmcp
+
+# 在 Cocos 工程目录执行，或自动探测工程根
+node scripts/install.mjs
+
+# 显式指定工程
+node scripts/install.mjs --project-root D:/UGit/your-cocos-project
+npm run setup
 ```
 
-默认行为：
+npm 全局包：
+
+```bash
+cocos-meta-mcp-setup --project-root D:/你的工程
+# 或在工程目录下
+cd D:/你的工程 && cocos-meta-mcp-setup
+```
+
+## 默认行为
 
 | 组件 | 目标 |
 |------|------|
-| **Cursor MCP** | `%USERPROFILE%\.cursor\mcp.json`（全局） |
-| **Creator 扩展** | `%USERPROFILE%\.CocosCreator\extensions\fg-cocosmcp`（**全局，所有工程可用**） |
+| **Cursor MCP** | `%USERPROFILE%\.cursor\mcp.json` |
+| **Creator 扩展** | `{工程}/extensions/fg-cocosmcp`（**项目扩展**） |
 
-### 常用参数
+安装后：**打开该工程** → **扩展 → 扩展管理器 → 项目** → 启用 **fg-cocosmcp**。
 
-```powershell
-# 仅装 Cursor MCP
-.\scripts\install.ps1 -ProjectRoot D:\proj -ExtensionOnly
+## 工程根自动探测
 
-# 仅装 Creator 扩展（全局）
-.\scripts\install.ps1 -ProjectRoot D:\proj -CursorOnly -ExtensionMode global
+1. `--project-root`
+2. `COCOSMCP_PROJECT_ROOT` / `COCOS_PROJECT_ROOT`
+3. 从 cwd 向上找 `assets/` + `project.json`（或 `settings/`）
+4. Cursor `mcp.json` 里 cocos server 的 `cwd`
+5. Creator 配置中的最近工程
 
-# 扩展装到单个工程（非全局）
-.\scripts\install.ps1 -ProjectRoot D:\proj -ExtensionMode project
+## 常用参数
 
-# MCP 配置写到工程 .cursor/mcp.json
-.\scripts\install.ps1 -ProjectRoot D:\proj -CursorTarget project
+```bash
+# 仅 Cursor MCP
+node scripts/install.mjs --cursor-only
 
-# 工作流 profile（asset 插件三件套）
-.\scripts\install.ps1 -ProjectRoot D:\proj -CursorProfile workflow -IrRoot D:\export\ir
+# 仅 Creator 扩展（装到当前/指定工程）
+node scripts/install.mjs --extension-only --project-root D:/proj
 
-# 开发：扩展用目录联接，改仓库即生效
-.\scripts\install.ps1 -ProjectRoot D:\proj -ExtensionLink
+# 不装扩展
+node scripts/install.mjs --extension-mode none --project-root D:/proj
+
+# MCP 写到工程 .cursor/mcp.json
+node scripts/install.mjs --cursor-target project --project-root D:/proj
+
+# 工作流 profile
+node scripts/install.mjs --cursor-profile workflow --ir-root D:/export/ir
 ```
 
 ## 分步安装
 
 ### Cursor MCP
 
-```powershell
-node scripts/install-cursor.mjs --project-root D:\UGit\your-cocos-project
-node scripts/install-cursor.mjs --project-root D:\proj --profile workflow --ir-root D:\export\ir
+```bash
+node scripts/install-cursor.mjs --project-root D:/proj
 ```
 
-安装后 **重启 Cursor** 或重载 MCP。
+### Creator 扩展（官方方式）
 
-### Creator 扩展（全局）
-
-Cocos Creator 3.8 会在启动时扫描 [全局扩展目录](https://docs.cocos.com/creator/3.8/manual/en/editor/extension/install.html)：
-
-| 系统 | 路径 |
-|------|------|
-| Windows | `%USERPROFILE%\.CocosCreator\extensions\` |
-| macOS | `~/.CocosCreator/extensions/` |
-
-```powershell
-node scripts/install-extension.mjs --mode global
+```bash
+node scripts/install-extension.mjs --mode project --project-root D:/proj
 ```
 
-然后在 Creator：**扩展 → 扩展管理器 → Global 标签 → 启用 fg-cocosmcp**。
+目录结构（与官方打包要求一致）：
 
-控制台应出现：`MCP HTTP bridge http://127.0.0.1:3921`
-
-### Creator 扩展（单工程）
-
-```powershell
-node scripts/install-extension.mjs --mode project --project-root D:\UGit\your-cocos-project
+```text
+{工程}/extensions/fg-cocosmcp/
+  dist/
+  package.json
 ```
 
-在 **Project** 标签启用。
+## 关于「全局扩展」
 
-## 全局 vs 工程扩展
+[Cocos 3.8 中文安装文档](https://docs.cocos.com/creator/3.8/manual/zh/editor/extension/install.html) **只描述项目路径** `${工程}/extensions`，扩展管理器示例也在 **项目** 标签。
 
-| | 全局 | 工程 |
-|--|------|------|
-| 路径 | `~/.CocosCreator/extensions/fg-cocosmcp` | `{工程}/extensions/fg-cocosmcp` |
-| 适用 | 所有 Creator 工程 | 仅当前工程 |
-| 推荐 | 日常开发、MCP 桥接 | CI / 团队锁定版本 |
+旧版英文文档曾提到 `~/.CocosCreator/extensions`；若你环境仍支持，可用（不推荐）：
 
-MCP 的 `cwd` 仍指向**当前 Cocos 工程根**（`--project-root`），与扩展安装位置无关。
+```bash
+node scripts/install-extension.mjs --mode global-legacy
+```
+
+**每个 Cocos 工程需各自安装一次**，或把 `extensions/fg-cocosmcp` 提交进 Git 供团队共用。
+
+MCP 的 `cwd` 始终指向**当前打开的 Cocos 工程根**，与你在哪个工程里安装了扩展一致。

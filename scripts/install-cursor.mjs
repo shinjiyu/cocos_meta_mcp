@@ -10,12 +10,14 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveCocosProjectRoot } from "./lib/detect-cocos-project.mjs";
+import { mcpDepsReady } from "./lib/ensure-deps.mjs";
 import {
     cursorGlobalMcpConfigPath,
     cursorProjectMcpConfigPath,
     mcpDir,
-    readJsonFile,
     packageRoot,
+    readJsonFile,
     writeJsonFile,
 } from "./lib/paths.mjs";
 
@@ -25,7 +27,7 @@ function usage() {
     console.error(`Usage: node scripts/install-cursor.mjs [options]
 
 Options:
-  --project-root <path>   Cocos project root (MCP cwd). Required.
+  --project-root <path>   Cocos project root (auto-detected if omitted)
   --repo <path>           cocosmcp repo root (default: auto)
   --ir-root <path>        COCOSMCP_IR_ROOT (optional)
   --profile <name>        minimal | workflow | admin | all (default: minimal)
@@ -145,15 +147,22 @@ function mergeMcpConfig(existing, servers) {
     return next;
 }
 
-function runNpmInstall(repo) {
-    const dir = mcpDir(repo);
-    console.error(`[install-cursor] npm install in ${dir}`);
-    const r = spawnSync(process.platform === "win32" ? "npm.cmd" : "npm", ["install"], {
-        cwd: dir,
+function ensurePackageDeps(repo) {
+    if (mcpDepsReady(repo)) {
+        console.error("[install-cursor] dependencies OK, skip npm install");
+        return;
+    }
+    console.error(`[install-cursor] npm install in ${repo}`);
+    const r = spawnSync(process.platform === "win32" ? "npm.cmd" : "npm", ["install", "--ignore-scripts"], {
+        cwd: repo,
         stdio: "inherit",
+        env: { ...process.env },
     });
     if (r.status !== 0) {
-        throw new Error("npm install failed in mcp/");
+        throw new Error(`npm install failed in ${repo}`);
+    }
+    if (!mcpDepsReady(repo)) {
+        throw new Error("MCP dependencies missing after npm install (@modelcontextprotocol/sdk)");
     }
 }
 
@@ -164,8 +173,14 @@ function main() {
         process.exit(0);
     }
     if (!opts.projectRoot) {
-        usage();
-        process.exit(1);
+        const found = resolveCocosProjectRoot({ searchFrom: process.cwd() });
+        if (!found) {
+            console.error("Could not auto-detect Cocos project root. Use --project-root <path>");
+            usage();
+            process.exit(1);
+        }
+        opts.projectRoot = found.path;
+        console.error(`[install-cursor] auto project-root (${found.source}): ${found.path}`);
     }
 
     const repo = path.resolve(opts.repo ?? packageRoot());
@@ -175,7 +190,7 @@ function main() {
     }
 
     if (!opts.skipNpm && !opts.dryRun) {
-        runNpmInstall(repo);
+        ensurePackageDeps(repo);
     }
 
     const servers = buildServers({

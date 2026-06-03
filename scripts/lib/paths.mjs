@@ -57,7 +57,7 @@ export function mcpDir(root = packageRoot()) {
 }
 
 export function extensionDestDir({ mode, projectRoot, extensionName = "fg-cocosmcp" }) {
-    if (mode === "global") {
+    if (mode === "global" || mode === "global-legacy") {
         return path.join(cocosGlobalExtensionsDir(), extensionName);
     }
     if (mode === "project") {

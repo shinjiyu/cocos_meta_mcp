@@ -23,12 +23,12 @@ npm install -D cocos-meta-mcp
 ## 一键配置
 
 ```bash
-# Cursor MCP + Creator 全局扩展
-cocos-meta-mcp-setup all --project-root /path/to/cocos/project
+# Cursor MCP + Creator 项目扩展
+cocos-meta-mcp-setup --project-root /path/to/cocos/project
 
 # 分步
-cocos-meta-mcp-setup extension --mode global
-cocos-meta-mcp-setup cursor --project-root /path/to/cocos/project --profile workflow
+cocos-meta-mcp-setup extension --mode project --project-root /path/to/cocos/project
+cocos-meta-mcp-setup cursor --project-root /path/to/cocos/project
 ```
 
 ## Cursor mcp.json 示例（npm 全局安装后）

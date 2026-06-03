@@ -1,147 +1,105 @@
-# cocosmcp
-
-
-
-芬格 **Cocos Creator 糖果工程** 专用 MCP（stdio）+ Creator 扩展 HTTP 桥。**不含** DaxianLee 通用扩展。
-
-
-
-## 分层架构（v2）
-
-
-
-**默认只暴露 1 个 Core tool**：`cocosmcp_exec`。其余按需加载。
-
-
-
-```text
-
-L0 Core        cocosmcp_exec
-
-L1 Recipe      register / run / stats + plugin 管理（COCOSMCP_RECIPE_LAYER=1）
-
-L2 Promote      promote / demote（COCOSMCP_RECIPE_LAYER=2）
-
-Plugins        asset-meta、asset-sync、ir-prefab（COCOSMCP_PLUGINS 或 .cocosmcp/plugins.json）
-
+```
+    ╭────────────────────────────────╮
+    │                                │
+    │          /\___/\               │
+    │         (  ◕ ω ◕ )             │
+    │          >  ♡  <               │
+    │     ~~  \_____/  ~~            │
+    │  ~~~~~~~~~~~~~~~~~~~~~         │
+    │                                │
+    │       CocosMetaMCP             │
+    │                                │
+    ╰────────────────────────────────╯
 ```
 
+# CocosMetaMCP
 
+Cocos Creator MCP + 扩展桥，让 Cursor 等客户端通过 AI 驱动编辑器内脚本与资源操作。
 
-详见 `docs/LAYERS.md`。
+## 安装
 
+需要：**Node.js 18+**、**Cocos Creator 3.8+**、**Cursor**（或其它 MCP 客户端）。
 
-
-## 仓库结构
-
-
-
-```text
-
-cocosmcp/
-
-  mcp/              # stdio MCP（core + plugins/）
-
-  extension/        # Creator 扩展 fg-cocosmcp
-
-  docs/
-
-  examples/
-
-```
-
-
-
-## npm 发布
-
-包名 **`cocos-meta-mcp@2.1.0`**，含 MCP + Creator 扩展 + 安装脚本。详见 [`docs/NPM.md`](docs/NPM.md)。
+### npm（推荐）
 
 ```bash
 npm install -g cocos-meta-mcp
-cocos-meta-mcp-setup all --project-root D:/path/to/cocos/project
+cocos-meta-mcp-setup --project-root D:/path/to/your-cocos-project
 ```
 
-Cursor 里 `command` 填 `cocos-meta-mcp` 即可。
+### 克隆仓库（开发）
 
-## 安装（源码 / 开发）
-
-一键安装（Cursor MCP + Creator 扩展）见 [`docs/INSTALL.md`](docs/INSTALL.md)。
-
-```powershell
-.\scripts\install.ps1 -ProjectRoot D:\path\to\your-cocos-project
+```bash
+git clone https://github.com/shinjiyu/cocos_meta_mcp.git
+cd cocos_meta_mcp && npm install
+npm run setup -- --project-root D:/path/to/your-cocos-project
 ```
 
-默认：MCP 写入 `%USERPROFILE%\.cursor\mcp.json`，扩展装到 **Creator 全局** `%USERPROFILE%\.CocosCreator\extensions\fg-cocosmcp`（所有工程可用）。
+在 Cocos 工程目录下可省略 `--project-root`（自动探测）。
 
-手动安装：
+### Creator
 
+1. 完全退出并重启 Creator，打开对应工程  
+2. **扩展 → 扩展管理器 → 项目** → 启用 **fg-cocosmcp**  
+3. 控制台：`MCP HTTP bridge http://127.0.0.1:3921`
 
+### Cursor
 
-Creator：**扩展管理器** → 启用 **fg-cocosmcp** → `MCP HTTP bridge http://127.0.0.1:3921`。
+安装脚本写入 `%USERPROFILE%\.cursor\mcp.json`。重启 Cursor，在 MCP 设置中确认已连接。
 
+## 验证
 
+1. Creator 中启用 **fg-cocosmcp**  
+2. Cursor Agent 调用 `cocosmcp_health` 或 `cocosmcp_exec`
 
-## Cursor 配置示例
+## 核心能力：脚本自动提升为 Tool
 
+默认只暴露 **`cocosmcp_exec`** 一个入口。Recipe 层让 Agent **自己发现、注册、提升**常用 Creator 脚本为独立 MCP Tool，减少 token、提高选型准确率。
 
+```text
+cocosmcp_exec（探索）
+      │
+      ▼
+exec 审计日志 ──► cocosmcp_exec_stats（找高频脚本）
+      │
+      ▼
+cocosmcp_register_recipe（保存到 .cocosmcp/recipes/）
+      │
+      ▼
+cocosmcp_promote_recipe ──► cocosmcp_r_{name}（独立 Tool，通知 Cursor 刷新列表）
+```
 
-| 场景 | 配置 |
+| 阶段 | 暴露的 Tool | 说明 |
+|------|-------------|------|
+| 默认 | `cocosmcp_exec` | 通用入口，在 Creator 内执行任意脚本 |
+| 探索后 | `cocosmcp_run_recipe` | 运行已注册 recipe，无需重复写 code |
+| **提升后** | **`cocosmcp_r_{name}`** | 升格为一级 Tool，Agent 直接选用 |
 
-|------|------|
+数据保存在 `{工程}/.cocosmcp/`，可进 Git 与团队共享。
 
-| 日常（仅 exec） | `examples/cursor-mcp.json` |
-
-| IR + genbot | `examples/cursor-mcp-layered.json` → `cocosmcp-workflow` |
-
-| Agent admin | `cocosmcp-admin`（recipe L2 + 插件） |
-
-| 等同旧版全量 | `COCOSMCP_TOOL_PROFILE=full` |
-
-
-
-## 插件
-
-
-
-| 插件 id | 说明 | tools（`3.8.8` → `cc388` 前缀） |
-|----|------|------|
-| `asset-meta` | .meta 检查 / 导入 / 刷新 | `cocosmcp_cc388_asset_meta_status` 等 3 个 |
-| `asset-sync` | 外部资源目录同步 | `cocosmcp_cc388_sync_external_assets` |
-| `ir-prefab` | IR prefab 脚本 | `cocosmcp_cc388_generate_ir_prefabs` |
-| `genbot` | bind / gen.ts / view.ts（本地私有，不进公开仓库） |
-
-
+**启用**（Cursor `mcp.json`）：
 
 ```json
-
-{ "env": { "COCOSMCP_PLUGINS": "asset-meta,asset-sync,ir-prefab" } }
-
+{
+  "env": {
+    "COCOSMCP_RECIPE_LAYER": "2"
+  }
+}
 ```
 
+| 值 | 能力 |
+|----|------|
+| `0`（默认） | 仅 `cocosmcp_exec` |
+| `1` | + recipe 注册 / 运行 / 统计、插件管理 |
+| `2` | + **promote / demote**（提升为独立 Tool） |
 
+详见 [`docs/RECIPES.md`](docs/RECIPES.md)。
 
-## 环境变量
+## 文档
 
-
-
-| 变量 | 说明 |
-
+| 主题 | 链接 |
 |------|------|
-
-| `COCOSMCP_RECIPE_LAYER` | `0`（默认）\| `1` \| `2` |
-
-| `COCOSMCP_PLUGINS` | 逗号分隔插件 id |
-
-| `COCOSMCP_TOOL_PROFILE` | `full` = 全插件 + recipe L2 |
-
-| `COCOSMCP_PROJECT_ROOT` | 工程根（默认 mcp.json `cwd`） |
-
-| `COCOSMCP_IR_ROOT` | SVN IR 目录 |
-
-| `COCOSMCP_HTTP_URL` | 扩展桥，默认 `http://127.0.0.1:3921` |
-
-
-
-文档：`docs/LAYERS.md`、`docs/EXEC.md`、`docs/RECIPES.md`。
-
-
+| Recipe / 提升详解 | [`docs/RECIPES.md`](docs/RECIPES.md) |
+| 分层架构与插件 | [`docs/LAYERS.md`](docs/LAYERS.md) |
+| 安装参数 | [`docs/INSTALL.md`](docs/INSTALL.md) |
+| npm 发布 | [`docs/NPM.md`](docs/NPM.md) |

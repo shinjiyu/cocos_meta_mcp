@@ -2,7 +2,6 @@
     "name": "cocosmcp",
     "version": "2.0.0",
     "private": true,
-    "private": true,
     "description": "Bundled in root cocos-meta-mcp npm package; dev-only",
     "type": "module",
     "main": "index.mjs",

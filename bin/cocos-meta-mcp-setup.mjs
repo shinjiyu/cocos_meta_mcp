@@ -1,33 +1,45 @@
 #!/usr/bin/env node
 /**
- * Setup CLI: Cursor MCP config + Cocos Creator extension install
+ * Setup CLI (npm global): Cursor MCP + Cocos Creator extension
  *
+ *   cocos-meta-mcp-setup --project-root D:/proj
  *   cocos-meta-mcp-setup cursor --project-root D:/proj
- *   cocos-meta-mcp-setup extension --mode global
- *   cocos-meta-mcp-setup all --project-root D:/proj
+ *   cocos-meta-mcp-setup extension --mode project --project-root D:/proj
  */
 import { spawnSync } from "node:child_process";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { packageRoot } from "../scripts/lib/paths.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 function usage() {
-    console.error(`Usage: cocos-meta-mcp-setup <command> [options]
+    console.error(`Usage: cocos-meta-mcp-setup [command] [options]
 
-Commands:
-  cursor      Merge MCP entries into Cursor mcp.json
-  extension   Install fg-cocosmcp Creator extension (global or project)
-  all         cursor + extension (extension defaults to global)
+Commands (optional):
+  (default)   Same as "all" when --project-root is given
+  all         Cursor MCP + Creator 项目扩展 (default: {工程}/extensions)
+  cursor      Cursor MCP only
+  extension   Creator extension only
 
-Run with --help on each command for options, e.g.:
+Default one-liner:
+  cocos-meta-mcp-setup --project-root D:/path/to/cocos/project
+
+Or pass through install.mjs flags:
+  cocos-meta-mcp-setup --project-root D:/proj --cursor-profile workflow
+
+Subcommand help:
   cocos-meta-mcp-setup cursor --help
   cocos-meta-mcp-setup extension --help
 `);
 }
 
-function runScript(scriptName, args) {
+function runInstall(args) {
+    const script = path.join(packageRoot(), "scripts", "install.mjs");
+    const r = spawnSync(process.execPath, [script, ...args], { stdio: "inherit" });
+    if (r.status !== 0) {
+        process.exit(r.status ?? 1);
+    }
+}
+
+function runLegacy(scriptName, args) {
     const script = path.join(packageRoot(), "scripts", scriptName);
     const r = spawnSync(process.execPath, [script, ...args], { stdio: "inherit" });
     if (r.status !== 0) {
@@ -44,27 +56,23 @@ function main() {
         process.exit(cmd ? 0 : 1);
     }
 
-    const rest = argv.slice(1);
+    if (cmd.startsWith("-") || cmd === "all") {
+        const args = cmd === "all" ? argv.slice(1) : argv;
+        runInstall(args);
+        return;
+    }
 
+    const rest = argv.slice(1);
     switch (cmd) {
         case "cursor":
-            runScript("install-cursor.mjs", rest);
+            runLegacy("install-cursor.mjs", rest);
             break;
         case "extension":
-            runScript("install-extension.mjs", rest);
+            runLegacy("install-extension.mjs", rest);
             break;
-        case "all": {
-            if (!rest.includes("--project-root") && !rest.some((a, i) => rest[i - 1] === "--project-root")) {
-                console.error("cocos-meta-mcp-setup all requires --project-root");
-                process.exit(1);
-            }
-            runScript("install-cursor.mjs", rest);
-            const extArgs = rest.includes("--mode")
-                ? rest
-                : ["--mode", "global", ...rest.filter((a, i) => rest[i - 1] !== "--mode" && a !== "--mode")];
-            runScript("install-extension.mjs", extArgs);
+        case "all":
+            runInstall(rest);
             break;
-        }
         default:
             console.error(`Unknown command: ${cmd}`);
             usage();

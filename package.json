@@ -50,6 +50,7 @@
         "build:extension": "npm install --prefix extension && npm run build --prefix extension",
         "prepack": "npm run build:extension && npm run typecheck:mcp",
         "pack:check": "npm pack --dry-run",
+        "setup": "node scripts/install.mjs",
         "install:cursor": "node scripts/install-cursor.mjs",
         "install:extension": "node scripts/install-extension.mjs"
     },
