@@ -1,10 +1,4 @@
 {
   "version": 1,
-  "enabled": [
-    "asset-meta",
-    "asset-sync",
-    "genbot",
-    "ir-prefab"
-  ],
-  "updatedAt": "2026-06-03T10:17:30.143Z"
+  "enabled": ["asset-meta", "asset-sync"]
 }
