@@ -14,72 +14,74 @@
 
 # CocosMetaMCP
 
-Cocos Creator MCP + 扩展桥，让 Cursor 等客户端通过 AI 驱动编辑器内脚本与资源操作。
+[中文文档](README.zh-CN.md)
 
-## 安装
+MCP (stdio) + Creator extension bridge. Drive in-editor scripts and asset workflows from Cursor and other MCP clients.
 
-需要：**Node.js 18+**、**Cocos Creator 3.8+**、**Cursor**（或其它 MCP 客户端）。
+## Install
 
-### npm（推荐）
+Requires **Node.js 18+**, **Cocos Creator 3.8+**, and **Cursor** (or any MCP client).
+
+### npm (recommended)
 
 ```bash
 npm install -g cocos-meta-mcp
-cocos-meta-mcp setup --project-root D:/path/to/your-cocos-project
+cocos-meta-mcp setup --project-root /path/to/your-cocos-project
 ```
 
-### 克隆仓库（开发）
+### From source (development)
 
 ```bash
 git clone https://github.com/shinjiyu/cocos_meta_mcp.git
 cd cocos_meta_mcp && npm install
-npm run setup -- --project-root D:/path/to/your-cocos-project
+npm run setup -- --project-root /path/to/your-cocos-project
 ```
 
-在 Cocos 工程目录下可省略 `--project-root`（自动探测）。
+Run inside your Cocos project directory to auto-detect the project root (omit `--project-root`).
 
 ### Creator
 
-1. 完全退出并重启 Creator，打开对应工程  
-2. **扩展 → 扩展管理器 → 项目** → 启用 **cocos-meta-mcp**  
-3. 控制台：`MCP HTTP bridge http://127.0.0.1:3921`
+1. Fully quit and restart Creator; open the target project  
+2. **Extension → Extension Manager → Project** → enable **cocos-meta-mcp**  
+3. Console should show: `MCP HTTP bridge http://127.0.0.1:3921`
 
 ### Cursor
 
-安装脚本写入 `%USERPROFILE%\.cursor\mcp.json`。重启 Cursor，在 MCP 设置中确认已连接。
+Setup writes `%USERPROFILE%\.cursor\mcp.json` (Windows). Restart Cursor and confirm the MCP server is connected.
 
-默认 **workflow** 会启用 MCP 插件 `asset-meta`、`asset-sync`，详见 [`docs/PLUGINS.md`](docs/PLUGINS.md)。
+Default **workflow** profile enables plugins `asset-meta` and `asset-sync`. See [`docs/PLUGINS.md`](docs/PLUGINS.md).
 
-## 验证
+## Verify
 
-1. Creator 中启用 **cocos-meta-mcp**  
-2. Cursor Agent 调用 `cocosmcp_health` 或 `cocosmcp_exec`
+1. Enable **cocos-meta-mcp** in Creator  
+2. In Cursor Agent, call `cocosmcp_health` or `cocosmcp_exec`
 
-## 核心能力：脚本自动提升为 Tool
+## Self-evolving tools (Recipe promote)
 
-默认只暴露 **`cocosmcp_exec`** 一个入口。Recipe 层让 Agent **自己发现、注册、提升**常用 Creator 脚本为独立 MCP Tool，减少 token、提高选型准确率。
+By default only **`cocosmcp_exec`** is exposed. The Recipe layer lets the Agent **discover, register, and promote** frequent Creator scripts into dedicated MCP tools—less token noise, better tool selection.
 
 ```text
-cocosmcp_exec（探索）
+cocosmcp_exec (explore)
       │
       ▼
-exec 审计日志 ──► cocosmcp_exec_stats（找高频脚本）
+exec audit log ──► cocosmcp_exec_stats (find hot scripts)
       │
       ▼
-cocosmcp_register_recipe（保存到 .cocosmcp/recipes/）
+cocosmcp_register_recipe (save to .cocosmcp/recipes/)
       │
       ▼
-cocosmcp_promote_recipe ──► cocosmcp_r_{name}（独立 Tool，通知 Cursor 刷新列表）
+cocosmcp_promote_recipe ──► cocosmcp_r_{name} (standalone tool; Cursor refreshes list)
 ```
 
-| 阶段 | 暴露的 Tool | 说明 |
-|------|-------------|------|
-| 默认 | `cocosmcp_exec` | 通用入口，在 Creator 内执行任意脚本 |
-| 探索后 | `cocosmcp_run_recipe` | 运行已注册 recipe，无需重复写 code |
-| **提升后** | **`cocosmcp_r_{name}`** | 升格为一级 Tool，Agent 直接选用 |
+| Stage | Tools | Description |
+|-------|-------|-------------|
+| Default | `cocosmcp_exec` | Run any script inside open Creator |
+| After explore | `cocosmcp_run_recipe` | Re-run saved recipes |
+| **Promoted** | **`cocosmcp_r_{name}`** | First-class tools the Agent picks directly |
 
-数据保存在 `{工程}/.cocosmcp/`，可进 Git 与团队共享。
+Data lives under `{project}/.cocosmcp/` and can be committed to Git for your team.
 
-**启用**（Cursor `mcp.json`）：
+**Enable** (Cursor `mcp.json`):
 
 ```json
 {
@@ -89,20 +91,20 @@ cocosmcp_promote_recipe ──► cocosmcp_r_{name}（独立 Tool，通知 Curso
 }
 ```
 
-| 值 | 能力 |
-|----|------|
-| `0`（默认） | 仅 `cocosmcp_exec` |
-| `1` | + recipe 注册 / 运行 / 统计、插件管理 |
-| `2` | + **promote / demote**（提升为独立 Tool） |
+| Value | Capability |
+|-------|------------|
+| `0` (default) | `cocosmcp_exec` only |
+| `1` | + recipe register / run / stats, plugin management |
+| `2` | + **promote / demote** (standalone tools) |
 
-详见 [`docs/RECIPES.md`](docs/RECIPES.md)。
+See [`docs/RECIPES.md`](docs/RECIPES.md).
 
-## 文档
+## Documentation
 
-| 主题 | 链接 |
-|------|------|
-| **MCP 插件安装** | [`docs/PLUGINS.md`](docs/PLUGINS.md) |
-| Recipe / 提升详解 | [`docs/RECIPES.md`](docs/RECIPES.md) |
-| 分层架构与插件 | [`docs/LAYERS.md`](docs/LAYERS.md) |
-| 安装参数 | [`docs/INSTALL.md`](docs/INSTALL.md) |
-| npm 发布 | [`docs/NPM.md`](docs/NPM.md) |
+| Topic | Link |
+|-------|------|
+| **MCP plugin install** | [`docs/PLUGINS.md`](docs/PLUGINS.md) |
+| Recipes / promote | [`docs/RECIPES.md`](docs/RECIPES.md) |
+| Layered architecture | [`docs/LAYERS.md`](docs/LAYERS.md) |
+| Install options | [`docs/INSTALL.md`](docs/INSTALL.md) |
+| npm package | [`docs/NPM.md`](docs/NPM.md) |

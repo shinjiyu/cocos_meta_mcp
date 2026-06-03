@@ -1,7 +1,7 @@
 {
     "name": "cocos-meta-mcp",
-    "version": "2.1.5",
-    "description": "Cocos Creator MCP server (stdio) + cocos-meta-mcp extension installer for Cursor",
+    "version": "2.1.6",
+    "description": "Self-evolving MCP for Cocos Creator — stdio server, project extension, and Cursor setup (recipe promote)",
     "type": "module",
     "main": "./mcp/index.mjs",
     "bin": {
@@ -37,7 +37,9 @@
         "docs/EXEC.md",
         "docs/RECIPES.md",
         "docs/NPM.md",
-        "README.md"
+        "docs/NPM.en.md",
+        "README.md",
+        "README.zh-CN.md"
     ],
     "scripts": {
         "start": "node bin/cocos-meta-mcp.mjs",

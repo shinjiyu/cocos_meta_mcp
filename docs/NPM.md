@@ -1,6 +1,8 @@
 # npm 发布
 
-包名：**`cocos-meta-mcp`**（v2.1.5+）
+[English](NPM.en.md)
+
+包名：**`cocos-meta-mcp`**（v2.1.6+）
 
 包含：
 
