@@ -1,6 +1,6 @@
 {
     "name": "cocos-meta-mcp",
-    "version": "2.1.6",
+    "version": "2.1.7",
     "description": "Self-evolving MCP for Cocos Creator — stdio server, project extension, and Cursor setup (recipe promote)",
     "type": "module",
     "main": "./mcp/index.mjs",
@@ -53,7 +53,9 @@
         "pack:check": "npm pack --dry-run",
         "setup": "node scripts/install.mjs",
         "install:cursor": "node scripts/install-cursor.mjs",
-        "install:extension": "node scripts/install-extension.mjs"
+        "install:extension": "node scripts/install-extension.mjs",
+        "install:local-plugins": "node scripts/install-local-plugins.mjs",
+        "plugin:install": "node bin/cocos-meta-mcp.mjs plugin install --from ."
     },
     "engines": {
         "node": ">=18"

@@ -49,7 +49,7 @@ npm run setup -- --project-root D:/path/to/your-cocos-project
 
 安装脚本写入 `%USERPROFILE%\.cursor\mcp.json`。重启 Cursor，在 MCP 设置中确认已连接。
 
-默认 **workflow** 会启用 MCP 插件 `asset-meta`、`asset-sync`，详见 [`docs/PLUGINS.md`](docs/PLUGINS.md)。
+默认 **workflow** 会启用 MCP 插件 `asset-meta`、`asset-sync`，并开启 recipe 提升。自研插件：`cocos-meta-mcp plugin install --from <仓库路径>`，详见 [`docs/PLUGINS.md`](docs/PLUGINS.md)。
 
 ## 验证
 
@@ -58,7 +58,7 @@ npm run setup -- --project-root D:/path/to/your-cocos-project
 
 ## 核心能力：脚本自动提升为 Tool
 
-默认只暴露 **`cocosmcp_exec`** 一个入口。Recipe 层让 Agent **自己发现、注册、提升**常用 Creator 脚本为独立 MCP Tool，减少 token、提高选型准确率。
+`cocos-meta-mcp setup` 默认 **workflow** 已开启 recipe 提升（`COCOSMCP_RECIPE_LAYER=2`）。Agent 可发现高频脚本并提升为独立 MCP Tool。
 
 ```text
 cocosmcp_exec（探索）
@@ -81,21 +81,13 @@ cocosmcp_promote_recipe ──► cocosmcp_r_{name}（独立 Tool，通知 Curso
 
 数据保存在 `{工程}/.cocosmcp/`，可进 Git 与团队共享。
 
-**启用**（Cursor `mcp.json`）：
-
-```json
-{
-  "env": {
-    "COCOSMCP_RECIPE_LAYER": "2"
-  }
-}
-```
+仅要 `cocosmcp_exec` 时可设 `COCOSMCP_RECIPE_LAYER=0`（`setup --cursor-profile minimal`）。
 
 | 值 | 能力 |
 |----|------|
-| `0`（默认） | 仅 `cocosmcp_exec` |
+| `0` | 仅 `cocosmcp_exec` |
 | `1` | + recipe 注册 / 运行 / 统计、插件管理 |
-| `2` | + **promote / demote**（提升为独立 Tool） |
+| `2`（**setup 默认**） | + **promote / demote**（提升为独立 Tool） |
 
 详见 [`docs/RECIPES.md`](docs/RECIPES.md)。
 

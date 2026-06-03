@@ -1,190 +1,100 @@
 # MCP 插件安装
 
-CocosMetaMCP 有两层「插件」概念，不要混淆：
+CocosMetaMCP 有两层「插件」概念：
 
 | 类型 | 是什么 | 装在哪 |
 |------|--------|--------|
-| **Creator 扩展** | HTTP 桥，供 `cocosmcp_exec` 调编辑器 | `{工程}/extensions/cocos-meta-mcp` |
-| **MCP 插件** | 额外 MCP tool（asset-meta 等） | npm 包内 `mcp/plugins/` → 复制到 `{工程}/.cocosmcp/installed/` |
+| **Creator 扩展** | HTTP 桥 | `{工程}/extensions/cocos-meta-mcp` |
+| **MCP 插件** | 额外 MCP tool | `mcp/plugins/` → 工程 `.cocosmcp/installed/` |
 
-本文只讲 **MCP 插件**。Creator 扩展见 [`INSTALL.md`](INSTALL.md)。
-
-## 随 npm 发布的插件
-
-| 插件 id | 说明 | 典型 tool（Creator 3.8.8 → `cc388`） |
-|---------|------|--------------------------------------|
-| `asset-meta` | .meta 检查 / 导入 / 刷新 | `cocosmcp_cc388_asset_meta_status` 等 |
-| `asset-sync` | 外部资源目录同步 | `cocosmcp_cc388_sync_external_assets` |
-
-**不进 npm**（需本地私有部署）：`ir-prefab`、`genbot`
+Creator 扩展见 [`INSTALL.md`](INSTALL.md)。
 
 ---
 
-## 方式一：一键 setup（推荐）
+## 一条命令安装（推荐）
 
-`cocos-meta-mcp setup` 默认 **profile=workflow**，会在 Cursor `mcp.json` 写入：
-
-```json
-{
-  "env": {
-    "COCOSMCP_PLUGINS": "asset-meta,asset-sync"
-  }
-}
-```
-
-MCP 启动时会自动 **全量安装** 到 `{工程}/.cocosmcp/installed/{id}/` 并加载 tool。
+在**插件源码所在仓库**或任意目录执行：
 
 ```bash
-cd D:/你的/cocos/工程
-cocos-meta-mcp setup
-# 重启 Cursor
+cocos-meta-mcp plugin install --from D:/path/to/repo-with-mcp-plugins
 ```
 
-只要 `cocosmcp_exec`、不要插件：
+会自动完成：
+
+1. **检查** — 每个插件须有 `manifest.json` + `index.mjs`
+2. **拷贝/替换** — 写入当前 `cocos-meta-mcp` 包的 `mcp/plugins/{id}/`（npm 全局安装即全局包目录）
+3. **更新 Cursor** — 合并 `%USERPROFILE%\.cursor\mcp.json` 里 `cocos-meta-mcp` 相关项的 `COCOSMCP_PLUGINS`（并补 `COCOSMCP_RECIPE_LAYER=2`）
+
+常用选项：
 
 ```bash
-cocos-meta-mcp setup --cursor-profile minimal
+cocos-meta-mcp plugin list
+cocos-meta-mcp plugin install --from . --ids my-plugin
+cocos-meta-mcp plugin install --from ./mcp/plugins/my-plugin
+cocos-meta-mcp plugin install --from . --no-cursor    # 只拷插件，不改 mcp.json
+cocos-meta-mcp plugin install --from . --dry-run
 ```
 
-要 recipe + 插件管理 + 全部内置插件：
-
-```bash
-cocos-meta-mcp setup --cursor-profile admin
-```
+完成后**重启 Cursor**。
 
 ---
 
-## 方式二：手动改 Cursor `mcp.json`
+## 安装新插件（对照表）
 
-全局配置：`%USERPROFILE%\.cursor\mcp.json`（Windows）
+| 你要装的 | 怎么做 |
+|----------|--------|
+| **npm 自带**（`asset-meta`、`asset-sync`） | `cocos-meta-mcp setup` 已默认启用 |
+| **自研插件** | `cocos-meta-mcp plugin install --from <含 mcp/plugins 的仓库>` |
+| **只启用、不拷文件**（插件已在包里） | 手动改 `COCOSMCP_PLUGINS`，或 Agent 调用 `cocosmcp_plugin_install` |
 
-```json
-{
-  "mcpServers": {
-    "cocosmcp-workflow": {
-      "command": "cocos-meta-mcp",
-      "cwd": "D:/path/to/cocos/project",
-      "env": {
-        "COCOSMCP_PLUGINS": "asset-meta,asset-sync"
-      }
-    }
-  }
-}
-```
-
-| 环境变量 | 说明 |
-|----------|------|
-| `COCOSMCP_PLUGINS` | 逗号分隔插件 id，启动时安装并加载 |
-| `COCOSMCP_TOOL_PROFILE=full` | 加载当前可用的**全部**插件 |
-| `COCOSMCP_ALL=1` | 同 full |
-
-改完后 **重启 Cursor** 或 Reload MCP。
+MCP 启动时会把插件**全量复制**到 `{工程}/.cocosmcp/installed/{id}/` 再加载 tool。
 
 ---
 
-## 方式三：工程内 `plugins.json`（持久化、可进 Git）
+## 编写新插件
 
-路径：`{工程}/.cocosmcp/plugins.json`
-
-示例（见 `examples/cocosmcp.plugins.example.json`）：
-
-```json
-{
-  "version": 2,
-  "cocosCreatorVersion": "3.8.8",
-  "plugins": {
-    "asset-meta": {
-      "enabled": true,
-      "installPath": ".cocosmcp/installed/asset-meta",
-      "toolsVersioned": [
-        "cocosmcp_cc388_asset_meta_status",
-        "cocosmcp_cc388_import_asset_meta",
-        "cocosmcp_cc388_refresh_asset_meta"
-      ]
-    },
-    "asset-sync": {
-      "enabled": true
-    }
-  }
-}
-```
-
-`COCOSMCP_PLUGINS` 与 `plugins.json` 里 `enabled: true` 的 id **会合并**。
-
-首次启用某插件时，MCP 仍会从 npm 包内的 `mcp/plugins/{id}/` 复制到 `installed/`（需 Creator 已打开且扩展桥可达，用于检测 Cocos 版本）。
-
----
-
-## 方式四：运行时由 Agent 安装（Recipe L1+）
-
-在 `mcp.json` 增加：
-
-```json
-{
-  "env": {
-    "COCOSMCP_RECIPE_LAYER": "1",
-    "COCOSMCP_PLUGINS": "asset-meta"
-  }
-}
-```
-
-重启 Cursor 后可使用：
-
-| tool | 作用 |
-|------|------|
-| `cocosmcp_plugin_list` | 列出可用 / 已安装 / 已加载插件 |
-| `cocosmcp_plugin_install` | 全量安装到 `.cocosmcp/installed/` |
-| `cocosmcp_plugin_enable` | 安装（若未装）并加载 tool |
-| `cocosmcp_plugin_disable` | 卸载 tool（保留 `installed/` 目录） |
-
-对 Agent 说：「列出插件并启用 asset-sync」即可。
-
----
-
-## 本地私有插件（ir-prefab、genbot）
-
-npm 包**不包含**这些目录。仅在源码仓库或本机保留：
+在 `mcp/plugins/{id}/` 下至少包含：
 
 ```text
-mcp/plugins/
-  ir-prefab/
-  genbot/
+manifest.json    # id、cocosVersion、tools 列表
+index.mjs        # export function register(server, ctx) { ... }
 ```
 
-### 开发机（克隆仓库）
-
-1. 确保 `mcp/plugins/ir-prefab/`（或 `genbot/`）存在于本地  
-2. Cursor 用 **源码** 启动 MCP，或全局 npm 包旁另有插件目录时，在 env 加上 id：
+`manifest.json` 示例：
 
 ```json
 {
-  "env": {
-    "COCOSMCP_PLUGINS": "asset-meta,asset-sync,ir-prefab"
-  }
+  "id": "my-plugin",
+  "name": "My Plugin",
+  "description": "What it does",
+  "cocosVersion": "3.8.*",
+  "tools": ["cocosmcp_my_tool"]
 }
 ```
 
-3. 重启 Cursor；插件会安装到 `{工程}/.cocosmcp/installed/ir-prefab/`
+参考 `mcp/plugins/asset-meta/`。写好之后执行上面的 `plugin install --from`。
 
-### 仅 npm 全局包、无源码
+---
 
-任选其一：
+## 工程内 `plugins.json`（可选）
 
-**A. 手动放入工程 `installed/`**
+路径：`{工程}/.cocosmcp/plugins.json`，与 `COCOSMCP_PLUGINS` **合并**启用。见 `examples/cocosmcp.plugins.example.json`。
 
-```text
-{工程}/.cocosmcp/installed/ir-prefab/
-  manifest.json
-  index.mjs
-```
+插件仍须先出现在 MCP 包的 `mcp/plugins/`（`plugin install` 会写入）。
 
-然后在 `plugins.json` 或 `COCOSMCP_PLUGINS` 里写 `ir-prefab`。
+---
 
-**B. 拷贝到全局 npm 包**（不推荐，升级 npm 会丢）
+## Agent 运行时安装
 
-```text
-%AppData%/npm/node_modules/cocos-meta-mcp/mcp/plugins/ir-prefab/
-```
+recipe 层默认开启时，Agent 可调用 `cocosmcp_plugin_list` / `cocosmcp_plugin_install` 等（前提：插件已在 MCP 包 builtin 目录）。
+
+---
+
+## 验证
+
+1. Creator 打开工程，扩展 **cocos-meta-mcp** 已启用  
+2. `cocos-meta-mcp plugin list` 能看到新插件且 `valid: true`  
+3. Cursor MCP tool 列表出现对应 tool  
 
 ---
 
@@ -192,38 +102,17 @@ mcp/plugins/
 
 ```text
 {工程}/.cocosmcp/
-  plugins.json          # 启用状态
-  project.json          # 检测到的 Creator 版本
+  plugins.json
   installed/
     asset-meta/
-      manifest.json     # 含 toolsVersioned、cocosVersionSlug
-      index.mjs
-    asset-sync/
+    my-plugin/
 ```
-
-`plugin_disable` **只卸 MCP tool**，不删 `installed/`，可随时 `plugin_enable` 恢复。
-
----
-
-## 验证
-
-1. Creator 打开工程，启用 **cocos-meta-mcp** 扩展  
-2. Cursor MCP 已连接  
-3. 调用 `cocosmcp_plugin_list`（需 `COCOSMCP_RECIPE_LAYER>=1`）或查看 MCP tool 列表  
-4. 应出现带版本前缀的 tool，例如 `cocosmcp_cc388_asset_meta_status`
-
-常见问题：
-
-| 现象 | 处理 |
-|------|------|
-| 只有 `cocosmcp_exec` | 检查 `COCOSMCP_PLUGINS`；或改用 `setup` / `--cursor-profile workflow` |
-| 插件 id 报错 not found | npm 包不含该插件；用本地 `mcp/plugins/` 或手动 `installed/` |
-| tool 名不对 | Creator 版本与 manifest `cocosVersion` 不匹配；见 [`LAYERS.md`](LAYERS.md) |
 
 ---
 
 ## 相关文档
 
-- [`INSTALL.md`](INSTALL.md) — Creator 扩展 + Cursor 一键安装  
-- [`LAYERS.md`](LAYERS.md) — 插件全量安装、tool 命名规则  
-- [`NPM.md`](NPM.md) — npm 包内容与发布
+- [`INSTALL.md`](INSTALL.md)
+- [`LAYERS.md`](LAYERS.md)
+- [`RECIPES.md`](RECIPES.md)
+- [`NPM.md`](NPM.md)

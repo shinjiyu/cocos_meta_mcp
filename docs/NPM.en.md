@@ -2,7 +2,7 @@
 
 [中文](NPM.md)
 
-Package: **`cocos-meta-mcp`** (v2.1.6+)
+Package: **`cocos-meta-mcp`** (v2.1.7+)
 
 ## Contents
 
@@ -23,9 +23,13 @@ Package: **`cocos-meta-mcp`** (v2.1.6+)
 
 For `cocosmcp_exec` only: `cocos-meta-mcp setup --cursor-profile minimal`
 
-**Not included** (local/private): `genbot`, `ir-prefab`
+Custom plugins outside the npm package:
 
-Plugin install details: [`PLUGINS.md`](PLUGINS.md)
+```bash
+cocos-meta-mcp plugin install --from D:/path/to/repo-with-mcp-plugins
+```
+
+See [`PLUGINS.md`](PLUGINS.md).
 
 ## Install
 

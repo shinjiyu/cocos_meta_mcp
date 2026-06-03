@@ -49,7 +49,7 @@ Run inside your Cocos project directory to auto-detect the project root (omit `-
 
 Setup writes `%USERPROFILE%\.cursor\mcp.json` (Windows). Restart Cursor and confirm the MCP server is connected.
 
-Default **workflow** profile enables plugins `asset-meta` and `asset-sync`. See [`docs/PLUGINS.md`](docs/PLUGINS.md).
+Default **workflow** profile enables bundled plugins and recipe promote. Custom plugins: `cocos-meta-mcp plugin install --from <repo>`. See [`docs/PLUGINS.md`](docs/PLUGINS.md).
 
 ## Verify
 
@@ -58,7 +58,7 @@ Default **workflow** profile enables plugins `asset-meta` and `asset-sync`. See 
 
 ## Self-evolving tools (Recipe promote)
 
-By default only **`cocosmcp_exec`** is exposed. The Recipe layer lets the Agent **discover, register, and promote** frequent Creator scripts into dedicated MCP tools—less token noise, better tool selection.
+Default **workflow** from `cocos-meta-mcp setup` enables recipe promote (`COCOSMCP_RECIPE_LAYER=2`). The Agent can discover hot scripts and promote them to dedicated MCP tools.
 
 ```text
 cocosmcp_exec (explore)
@@ -81,21 +81,13 @@ cocosmcp_promote_recipe ──► cocosmcp_r_{name} (standalone tool; Cursor ref
 
 Data lives under `{project}/.cocosmcp/` and can be committed to Git for your team.
 
-**Enable** (Cursor `mcp.json`):
-
-```json
-{
-  "env": {
-    "COCOSMCP_RECIPE_LAYER": "2"
-  }
-}
-```
+For `cocosmcp_exec` only: `COCOSMCP_RECIPE_LAYER=0` (`setup --cursor-profile minimal`).
 
 | Value | Capability |
 |-------|------------|
-| `0` (default) | `cocosmcp_exec` only |
+| `0` | `cocosmcp_exec` only |
 | `1` | + recipe register / run / stats, plugin management |
-| `2` | + **promote / demote** (standalone tools) |
+| `2` (**setup default**) | + **promote / demote** (standalone tools) |
 
 See [`docs/RECIPES.md`](docs/RECIPES.md).
 

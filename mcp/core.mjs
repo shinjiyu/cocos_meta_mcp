@@ -154,9 +154,9 @@ export function resolveRecipeLayer() {
         return 2;
     }
     if (process.env.COCOSMCP_TOOL_PROFILE === "workflow") {
-        return 1;
+        return 2;
     }
-    const raw = process.env.COCOSMCP_RECIPE_LAYER ?? "0";
+    const raw = process.env.COCOSMCP_RECIPE_LAYER ?? "2";
     const n = parseInt(raw, 10);
     if (Number.isNaN(n)) {return 0;}
     return Math.min(2, Math.max(0, n));

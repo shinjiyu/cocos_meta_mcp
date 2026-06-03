@@ -1,6 +1,6 @@
 # CocosMetaMCP Recipe（Agent 自控注册/提升）
 
-> 需 `COCOSMCP_RECIPE_LAYER>=1`。promote 需 `=2`。分层说明见 `LAYERS.md`。
+> 需 `COCOSMCP_RECIPE_LAYER>=1`（**setup 默认 workflow 已为 `2`**）。promote 需 `=2`。
 
 数据目录（相对工程根）：
 

@@ -48,7 +48,7 @@ Plugins        全量安装到 {工程}/.cocosmcp/installed/{id}/
 
 | 变量 | 默认 | 说明 |
 |------|------|------|
-| `COCOSMCP_RECIPE_LAYER` | `0` | `1`=recipe+插件管理；`2`=+promote |
+| `COCOSMCP_RECIPE_LAYER` | `2` | `0`=仅 exec；`1`=+recipe/插件管理；`2`=+promote（**默认**） |
 | `COCOSMCP_PLUGINS` | 空 | 启动时全量安装并加载 |
 | `COCOSMCP_TOOL_PROFILE=full` | — | 全插件 + recipe L2 |
 

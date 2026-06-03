@@ -115,10 +115,15 @@ function buildServers({ repo, projectRoot, irRoot, profile }) {
     const pluginEnv = {
         ...baseEnv,
         COCOSMCP_PLUGINS: "asset-meta,asset-sync",
+        COCOSMCP_RECIPE_LAYER: "2",
     };
 
     const minimal = {
-        cocosmcp: mcpServerBlock({ repo, projectRoot: cwd, env: { ...baseEnv } }),
+        cocosmcp: mcpServerBlock({
+            repo,
+            projectRoot: cwd,
+            env: { ...baseEnv, COCOSMCP_RECIPE_LAYER: "0" },
+        }),
     };
 
     const workflow = {

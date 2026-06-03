@@ -2,7 +2,7 @@
 
 [English](NPM.en.md)
 
-包名：**`cocos-meta-mcp`**（v2.1.6+）
+包名：**`cocos-meta-mcp`**（v2.1.7+）
 
 包含：
 
@@ -19,13 +19,17 @@
 | `asset-meta` | .meta 检查 / 导入 / 刷新 |
 | `asset-sync` | 外部资源目录同步 |
 
-`cocos-meta-mcp setup` **默认 profile=workflow**，会在 Cursor `mcp.json` 写入 `COCOSMCP_PLUGINS=asset-meta,asset-sync`。
+`cocos-meta-mcp setup` **默认 profile=workflow**，会在 Cursor `mcp.json` 写入 `COCOSMCP_PLUGINS=asset-meta,asset-sync` 与 `COCOSMCP_RECIPE_LAYER=2`（recipe 提升默认开启）。
 
 仅要 `cocosmcp_exec` 时可：`cocos-meta-mcp setup --cursor-profile minimal`
 
-**不包含**（私有/本地，不进 npm）：`genbot`、`ir-prefab`
+npm 包外另有自研插件时：
 
-插件安装详解：[`PLUGINS.md`](PLUGINS.md)
+```bash
+cocos-meta-mcp plugin install --from D:/path/to/repo-with-mcp-plugins
+```
+
+详见 [`PLUGINS.md`](PLUGINS.md)。
 
 ## 安装
 
