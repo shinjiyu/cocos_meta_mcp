@@ -319,6 +319,10 @@ function startHttpBridge() {
             send(200, {
                 ok: true,
                 service: "fg-cocosmcp",
+                cocosCreatorVersion:
+                    (Editor as { App?: { version?: string } }).App?.version ??
+                    (Editor as { versions?: { cocos?: string } }).versions?.cocos ??
+                    "unknown",
                 genbotBridge: true,
                 execBridge: true,
                 execModes: ["message", "eval", "scene-script", "scene-eval", "open-url"],

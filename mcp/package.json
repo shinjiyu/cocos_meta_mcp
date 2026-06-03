@@ -1,6 +1,6 @@
 {
     "name": "cocosmcp",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "private": true,
     "description": "cocosmcp stdio MCP: IR/meta sync + genbot + Creator exec",
     "type": "module",

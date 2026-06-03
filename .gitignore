@@ -2,3 +2,8 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+.cocosmcp/exec-audit.jsonl
+
+# genbot: local/private only, not in public repo
+mcp/plugins/genbot/
+mcp/genbot-runner.mjs

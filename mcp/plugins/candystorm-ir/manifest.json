@@ -1,0 +1,13 @@
+{
+    "id": "candystorm-ir",
+    "name": "Candystorm IR / Meta",
+    "description": "IR 同步、meta 导入/刷新、candystorm prefab 生成",
+    "cocosVersion": "3.8.*",
+    "tools": [
+        "cocosmcp_meta_status",
+        "cocosmcp_sync_ir",
+        "cocosmcp_import_meta",
+        "cocosmcp_refresh_meta_in_editor",
+        "cocosmcp_generate_prefabs"
+    ]
+}

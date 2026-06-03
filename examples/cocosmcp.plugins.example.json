@@ -1,0 +1,4 @@
+{
+  "enabled": ["candystorm-ir"],
+  "comment": "复制到工程根 .cocosmcp/plugins.json；也可用 COCOSMCP_PLUGINS 环境变量"
+}

@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "cocosmcp": {
+      "command": "node",
+      "args": ["D:/UGit/extension-tools/cocosmcp/mcp/index.mjs"],
+      "cwd": "D:/UGit/proj-l-client-candy",
+      "env": {
+        "COCOSMCP_IR_ROOT": "D:/svn/new_game/糖果风暴客户端资源/export/candystorm_ir"
+      }
+    },
+    "cocosmcp-workflow": {
+      "comment": "糖果 IR + genbot 流水线；需要时启用此 server",
+      "command": "node",
+      "args": ["D:/UGit/extension-tools/cocosmcp/mcp/index.mjs"],
+      "cwd": "D:/UGit/proj-l-client-candy",
+      "env": {
+        "COCOSMCP_PLUGINS": "candystorm-ir,genbot",
+        "COCOSMCP_IR_ROOT": "D:/svn/new_game/糖果风暴客户端资源/export/candystorm_ir"
+      }
+    },
+    "cocosmcp-admin": {
+      "comment": "Agent recipe + 插件管理",
+      "command": "node",
+      "args": ["D:/UGit/extension-tools/cocosmcp/mcp/index.mjs"],
+      "cwd": "D:/UGit/proj-l-client-candy",
+      "env": {
+        "COCOSMCP_RECIPE_LAYER": "2",
+        "COCOSMCP_PLUGINS": "candystorm-ir,genbot"
+      }
+    }
+  }
+}

@@ -1,22 +1,83 @@
-# cocosmcp（stdio MCP）
+# cocosmcp（stdio MCP v2）
 
-糖果工程专用，**8 个工具**。工程根目录由 Cursor `cwd` 或 `COCOSMCP_PROJECT_ROOT` 指定。
 
-| 工具 | 作用 |
-|------|------|
-| `cocosmcp_meta_status` | 检查关键 `.meta` |
-| `cocosmcp_sync_ir` | IR → `ab/candystorm` |
-| `cocosmcp_import_meta` | 拉起 Creator 并等待 meta |
-| `cocosmcp_refresh_meta_in_editor` | HTTP 刷新 meta（需 `fg-cocosmcp`） |
-| `cocosmcp_genbot_generate` | genbot 生成 bind / gen.ts / view.ts |
-| `cocosmcp_genbot_status` | genbot 输出状态 |
-| `cocosmcp_generate_prefabs` | IR 生成 prefab |
-| `cocosmcp_exec` | Creator 主进程/场景/打开预览 URL |
+
+分层 MCP：**默认 1 个 tool**（`cocosmcp_exec`），插件与 recipe 按需启用。
+
+
 
 ```powershell
+
 cd mcp && npm install
+
 ```
 
-Cursor 配置见仓库根目录 `examples/cursor-mcp.json`。
 
-`cocosmcp_exec` 五种 mode 见 `../docs/EXEC.md`。
+
+## 层级
+
+
+
+| 层 | 开关 | 暴露内容 |
+
+|----|------|----------|
+
+| **Core** | 始终 | `cocosmcp_exec`（可选 `cocosmcp_health`） |
+
+| **Recipe L1** | `COCOSMCP_RECIPE_LAYER=1` | stats、list/register/run recipe、plugin 管理 |
+
+| **Recipe L2** | `COCOSMCP_RECIPE_LAYER=2` | + promote/demote/unregister、恢复 promoted |
+
+| **Plugins** | `COCOSMCP_PLUGINS` 或 `.cocosmcp/plugins.json` | candystorm-ir、genbot |
+
+
+
+## 插件
+
+
+
+```text
+
+mcp/plugins/
+
+  candystorm-ir/   # 5 tools
+
+  genbot/          # 2 tools
+
+```
+
+
+
+## 快速 env
+
+
+
+```json
+
+{}
+
+```
+
+
+
+```json
+
+{ "COCOSMCP_PLUGINS": "candystorm-ir,genbot" }
+
+```
+
+
+
+```json
+
+{ "COCOSMCP_TOOL_PROFILE": "full" }
+
+```
+
+
+
+配置示例：`../examples/cursor-mcp-layered.json`  
+
+架构说明：`../docs/LAYERS.md`
+
+
