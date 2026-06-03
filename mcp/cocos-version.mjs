@@ -7,7 +7,7 @@ let cached = null;
 
 function readStoredVersion(projectRoot) {
     const file = path.join(cocosmcpDir(projectRoot), "project.json");
-    if (!fs.existsSync(file)) return null;
+    if (!fs.existsSync(file)) {return null;}
     try {
         return JSON.parse(fs.readFileSync(file, "utf8"));
     } catch {
@@ -39,14 +39,14 @@ export async function resolveCocosVersion(projectRoot, fetchCreatorBridge) {
     try {
         const health = await fetchCreatorBridge("/health");
         const v = health.body?.cocosCreatorVersion;
-        if (v && v !== "unknown") version = String(v);
+        if (v && v !== "unknown") {version = String(v);}
     } catch {
         /* bridge offline */
     }
 
     if (version === "unknown") {
         const stored = readStoredVersion(projectRoot);
-        if (stored?.cocosCreatorVersion) version = stored.cocosCreatorVersion;
+        if (stored?.cocosCreatorVersion) {version = stored.cocosCreatorVersion;}
     }
 
     const slug = cocosVersionSlug(version);

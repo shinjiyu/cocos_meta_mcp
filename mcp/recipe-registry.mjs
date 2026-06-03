@@ -57,10 +57,10 @@ export function hashText(text) {
 }
 
 export function summarizeValue(value, maxLen = 500) {
-    if (value === undefined) return undefined;
+    if (value === undefined) {return undefined;}
     try {
         const text = typeof value === "string" ? value : JSON.stringify(value);
-        if (text.length <= maxLen) return text;
+        if (text.length <= maxLen) {return text;}
         return `${text.slice(0, maxLen)}…(${text.length} chars)`;
     } catch {
         return String(value).slice(0, maxLen);
@@ -78,7 +78,7 @@ export function appendExecAudit(projectRoot, entry) {
 
 export function readAuditEntries(projectRoot, { limit = 500, source } = {}) {
     const file = auditPath(projectRoot);
-    if (!fs.existsSync(file)) return [];
+    if (!fs.existsSync(file)) {return [];}
     const lines = fs.readFileSync(file, "utf8").trim().split("\n").filter(Boolean);
     let entries = lines
         .map((line) => {
@@ -89,8 +89,8 @@ export function readAuditEntries(projectRoot, { limit = 500, source } = {}) {
             }
         })
         .filter(Boolean);
-    if (source) entries = entries.filter((e) => e.source === source);
-    if (limit > 0 && entries.length > limit) entries = entries.slice(-limit);
+    if (source) {entries = entries.filter((e) => e.source === source);}
+    if (limit > 0 && entries.length > limit) {entries = entries.slice(-limit);}
     return entries;
 }
 
@@ -124,10 +124,10 @@ export function computeExecStats(projectRoot, { limit = 2000 } = {}) {
         }
         const bucket = buckets.get(key);
         bucket.count += 1;
-        if (entry.ok) bucket.okCount += 1;
-        else bucket.failCount += 1;
+        if (entry.ok) {bucket.okCount += 1;}
+        else {bucket.failCount += 1;}
         bucket.lastTs = entry.ts;
-        if (entry.codePreview && !bucket.sampleCode) bucket.sampleCode = entry.codePreview;
+        if (entry.codePreview && !bucket.sampleCode) {bucket.sampleCode = entry.codePreview;}
     }
 
     const ranked = [...buckets.values()].sort((a, b) => b.count - a.count);
@@ -140,7 +140,7 @@ export function computeExecStats(projectRoot, { limit = 2000 } = {}) {
 
 function loadRecipeFile(projectRoot, name) {
     const file = recipeFilePath(projectRoot, name);
-    if (!fs.existsSync(file)) return null;
+    if (!fs.existsSync(file)) {return null;}
     try {
         return JSON.parse(fs.readFileSync(file, "utf8"));
     } catch (e) {
@@ -183,7 +183,7 @@ export function listRecipes(projectRoot) {
 
 export function getRecipe(projectRoot, name) {
     const recipe = loadRecipeFile(projectRoot, name);
-    if (!recipe) return null;
+    if (!recipe) {return null;}
     const registry = readRegistry(projectRoot);
     const meta = registry.recipes?.[name] ?? {};
     return {
@@ -236,13 +236,13 @@ export function saveRecipe(projectRoot, recipe, { overwrite = false } = {}) {
         params: recipe.params ?? {},
     };
 
-    if (recipe.code) clean.code = recipe.code;
-    if (recipe.module) clean.module = recipe.module;
-    if (recipe.method) clean.method = recipe.method;
-    if (recipe.messageType) clean.messageType = recipe.messageType;
-    if (recipe.args) clean.args = recipe.args;
-    if (recipe.url) clean.url = recipe.url;
-    if (recipe.port !== undefined) clean.port = recipe.port;
+    if (recipe.code) {clean.code = recipe.code;}
+    if (recipe.module) {clean.module = recipe.module;}
+    if (recipe.method) {clean.method = recipe.method;}
+    if (recipe.messageType) {clean.messageType = recipe.messageType;}
+    if (recipe.args) {clean.args = recipe.args;}
+    if (recipe.url) {clean.url = recipe.url;}
+    if (recipe.port !== undefined) {clean.port = recipe.port;}
     if (recipe.mode === "scene-script") {
         clean.sceneExtension = recipe.sceneExtension ?? recipe.extensionName ?? "fg-cocosmcp";
     }
@@ -270,7 +270,7 @@ export function saveRecipe(projectRoot, recipe, { overwrite = false } = {}) {
 export function deleteRecipe(projectRoot, name) {
     validateRecipeName(name);
     const file = recipeFilePath(projectRoot, name);
-    if (fs.existsSync(file)) fs.unlinkSync(file);
+    if (fs.existsSync(file)) {fs.unlinkSync(file);}
     const registry = readRegistry(projectRoot);
     if (registry.recipes?.[name]) {
         delete registry.recipes[name];
@@ -298,8 +298,8 @@ export function buildZodInputSchema(paramsDef = {}) {
                 field = z.string();
                 break;
         }
-        if (def?.optional || def?.default !== undefined) field = field.optional();
-        if (def?.description) field = field.describe(def.description);
+        if (def?.optional || def?.default !== undefined) {field = field.optional();}
+        if (def?.description) {field = field.describe(def.description);}
         shape[key] = field;
     }
     return shape;
@@ -308,7 +308,7 @@ export function buildZodInputSchema(paramsDef = {}) {
 function defaultParams(paramsDef = {}, input = {}) {
     const out = { ...input };
     for (const [key, def] of Object.entries(paramsDef)) {
-        if (out[key] === undefined && def?.default !== undefined) out[key] = def.default;
+        if (out[key] === undefined && def?.default !== undefined) {out[key] = def.default;}
     }
     return out;
 }
@@ -470,7 +470,7 @@ export function loadPromotedRecipesOnStartup(server, projectRoot, fetchCreatorBr
     const restored = [];
     const failed = [];
     for (const [name, meta] of Object.entries(registry.recipes ?? {})) {
-        if (!meta.promoted) continue;
+        if (!meta.promoted) {continue;}
         try {
             const r = registerPromotedRecipeTool(server, projectRoot, name, fetchCreatorBridge, {
                 toolName: meta.toolName,

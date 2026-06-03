@@ -1,0 +1,11 @@
+{
+    "id": "asset-meta",
+    "name": "Asset Meta",
+    "description": "Check, import, and refresh Creator asset .meta",
+    "cocosVersion": "3.8.8",
+    "tools": [
+        "cocosmcp_asset_meta_status",
+        "cocosmcp_import_asset_meta",
+        "cocosmcp_refresh_asset_meta"
+    ]
+}

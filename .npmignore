@@ -1,0 +1,15 @@
+# Dev / local only (published content controlled by package.json "files")
+.git/
+.github/
+*.log
+.cocosmcp/
+mcp/plugins/genbot/
+mcp/genbot-runner.mjs
+extension/node_modules/
+mcp/node_modules/
+eslint.config.js
+mcp/jsconfig.json
+mcp/test-invoke.mjs
+mcp/cursor-mcp.example.json
+mcp/package.json
+mcp/package-lock.json

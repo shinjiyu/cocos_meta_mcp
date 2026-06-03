@@ -1,11 +1,11 @@
 /** "3.8.8" → "cc388" */
 export function cocosVersionSlug(version) {
-    if (!version || version === "unknown") return "unknown";
+    if (!version || version === "unknown") {return "unknown";}
     const parts = String(version)
         .replace(/^[^\d]*/, "")
         .split(".")
         .filter(Boolean);
-    if (!parts.length) return "unknown";
+    if (!parts.length) {return "unknown";}
     return `cc${parts.join("")}`;
 }
 
@@ -15,12 +15,12 @@ export function versionedToolName(versionSlug, baseName) {
         return `cocosmcp_${versionSlug}_${baseName}`;
     }
     const rest = baseName.slice("cocosmcp_".length);
-    if (rest.startsWith(`${versionSlug}_`)) return baseName;
+    if (rest.startsWith(`${versionSlug}_`)) {return baseName;}
     return `cocosmcp_${versionSlug}_${rest}`;
 }
 
 /** recipe 提升：不带 Cocos 版本，默认 cocosmcp_r_{name} */
 export function promotedRecipeToolName(recipeName, customToolName) {
-    if (customToolName?.trim()) return customToolName.trim();
+    if (customToolName?.trim()) {return customToolName.trim();}
     return `cocosmcp_r_${recipeName}`;
 }

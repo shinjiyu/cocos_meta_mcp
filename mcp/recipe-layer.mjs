@@ -13,7 +13,7 @@ import {
 } from "./recipe-registry.mjs";
 
 export function registerRecipeLayerTools(server, ctx, recipeLayer) {
-    if (recipeLayer < 1) return { handles: [], promoted: { restored: [], failed: [] } };
+    if (recipeLayer < 1) {return { handles: [], promoted: { restored: [], failed: [] } };}
 
     const { PROJECT_ROOT, fetchCreatorBridge } = ctx;
     const handles = [];

@@ -1,0 +1,9 @@
+{
+    "id": "ir-prefab",
+    "name": "IR Prefab",
+    "description": "Generate prefabs from IR via project scripts",
+    "cocosVersion": "3.8.8",
+    "tools": [
+        "cocosmcp_generate_ir_prefabs"
+    ]
+}

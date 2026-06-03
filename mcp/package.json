@@ -2,11 +2,14 @@
     "name": "cocosmcp",
     "version": "2.0.0",
     "private": true,
-    "description": "cocosmcp stdio MCP: IR/meta sync + genbot + Creator exec",
+    "private": true,
+    "description": "Bundled in root cocos-meta-mcp npm package; dev-only",
     "type": "module",
     "main": "index.mjs",
     "scripts": {
-        "start": "node index.mjs"
+        "start": "node index.mjs",
+        "lint": "eslint .",
+        "typecheck": "node scripts/check-mcp.mjs"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.12.1",

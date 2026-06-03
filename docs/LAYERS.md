@@ -18,7 +18,7 @@ Plugins        全量安装到 {工程}/.cocosmcp/installed/{id}/
     genbot/
       manifest.json           # 含 cocosCreatorVersion、toolsVersioned
       index.mjs               # 从 mcp/plugins/ 复制的副本
-    candystorm-ir/
+    asset-meta/
   recipes/                    # 提升的 recipe 脚本
   registry.json
 ```

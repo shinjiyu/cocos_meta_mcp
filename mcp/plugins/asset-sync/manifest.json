@@ -1,0 +1,9 @@
+{
+    "id": "asset-sync",
+    "name": "Asset Sync",
+    "description": "Sync assets from external export directory into the project",
+    "cocosVersion": "3.8.8",
+    "tools": [
+        "cocosmcp_sync_external_assets"
+    ]
+}

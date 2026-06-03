@@ -28,7 +28,7 @@ cd mcp && npm install
 
 | **Recipe L2** | `COCOSMCP_RECIPE_LAYER=2` | + promote/demote/unregister、恢复 promoted |
 
-| **Plugins** | `COCOSMCP_PLUGINS` 或 `.cocosmcp/plugins.json` | candystorm-ir、genbot |
+| **Plugins** | `COCOSMCP_PLUGINS` 或 `.cocosmcp/plugins.json` | asset-meta、asset-sync、ir-prefab |
 
 
 
@@ -40,9 +40,10 @@ cd mcp && npm install
 
 mcp/plugins/
 
-  candystorm-ir/   # 5 tools
-
-  genbot/          # 2 tools
+  asset-meta/    # 3 tools
+  asset-sync/    # 1 tool
+  ir-prefab/     # 1 tool
+  genbot/        # 2 tools (local only)
 
 ```
 
@@ -62,7 +63,7 @@ mcp/plugins/
 
 ```json
 
-{ "COCOSMCP_PLUGINS": "candystorm-ir,genbot" }
+{ "COCOSMCP_PLUGINS": "asset-meta,asset-sync,ir-prefab" }
 
 ```
 

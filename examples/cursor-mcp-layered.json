@@ -9,12 +9,12 @@
       }
     },
     "cocosmcp-workflow": {
-      "comment": "糖果 IR + genbot 流水线；需要时启用此 server",
+      "comment": "通用 asset / IR 插件（Creator 3.8.8）",
       "command": "node",
       "args": ["D:/UGit/extension-tools/cocosmcp/mcp/index.mjs"],
       "cwd": "D:/UGit/proj-l-client-candy",
       "env": {
-        "COCOSMCP_PLUGINS": "candystorm-ir,genbot",
+        "COCOSMCP_PLUGINS": "asset-meta,asset-sync,ir-prefab",
         "COCOSMCP_IR_ROOT": "D:/svn/new_game/糖果风暴客户端资源/export/candystorm_ir"
       }
     },
@@ -25,7 +25,7 @@
       "cwd": "D:/UGit/proj-l-client-candy",
       "env": {
         "COCOSMCP_RECIPE_LAYER": "2",
-        "COCOSMCP_PLUGINS": "candystorm-ir,genbot"
+        "COCOSMCP_PLUGINS": "asset-meta,asset-sync,ir-prefab"
       }
     }
   }

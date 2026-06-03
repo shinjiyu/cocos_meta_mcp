@@ -204,7 +204,7 @@ async function openPreviewUrl(
     try {
         const port = await queryPreviewPort(body.port);
         const url = body.url?.trim() || `http://127.0.0.1:${port}/`;
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
+         
         const { shell } = require("electron") as { shell: { openExternal: (u: string) => Promise<void> } };
         await shell.openExternal(url);
         return { ok: true, url, port };

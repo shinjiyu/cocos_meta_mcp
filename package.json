@@ -1,0 +1,88 @@
+{
+    "name": "cocos-meta-mcp",
+    "version": "2.1.0",
+    "description": "Cocos Creator MCP server (stdio) + fg-cocosmcp extension installer for Cursor",
+    "type": "module",
+    "main": "./mcp/index.mjs",
+    "bin": {
+        "cocos-meta-mcp": "./bin/cocos-meta-mcp.mjs",
+        "cocos-meta-mcp-setup": "./bin/cocos-meta-mcp-setup.mjs"
+    },
+    "files": [
+        "bin",
+        "LICENSE",
+        "mcp/index.mjs",
+        "mcp/core.mjs",
+        "mcp/context.mjs",
+        "mcp/cocos-version.mjs",
+        "mcp/cocos-version-range.mjs",
+        "mcp/plugin-loader.mjs",
+        "mcp/recipe-layer.mjs",
+        "mcp/recipe-registry.mjs",
+        "mcp/tool-naming.mjs",
+        "mcp/plugins/asset-meta",
+        "mcp/plugins/asset-sync",
+        "mcp/plugins/ir-prefab",
+        "mcp/plugins/load-manifest.mjs",
+        "mcp/scripts",
+        "mcp/README.md",
+        "extension/dist",
+        "extension/source",
+        "extension/package.json",
+        "extension/tsconfig.json",
+        "extension/base.tsconfig.json",
+        "scripts",
+        "examples",
+        "docs/INSTALL.md",
+        "docs/LAYERS.md",
+        "docs/EXEC.md",
+        "docs/RECIPES.md",
+        "docs/NPM.md",
+        "README.md"
+    ],
+    "scripts": {
+        "start": "node bin/cocos-meta-mcp.mjs",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "typecheck": "npm run typecheck:mcp && npm run typecheck:ext",
+        "typecheck:mcp": "node mcp/scripts/check-mcp.mjs",
+        "typecheck:ext": "tsc -p extension/tsconfig.json --noEmit",
+        "build:extension": "npm install --prefix extension && npm run build --prefix extension",
+        "prepack": "npm run build:extension && npm run typecheck:mcp",
+        "pack:check": "npm pack --dry-run",
+        "install:cursor": "node scripts/install-cursor.mjs",
+        "install:extension": "node scripts/install-extension.mjs"
+    },
+    "engines": {
+        "node": ">=18"
+    },
+    "keywords": [
+        "cocos",
+        "cocos-creator",
+        "mcp",
+        "model-context-protocol",
+        "cursor",
+        "game-dev"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/shinjiyu/cocos_meta_mcp.git"
+    },
+    "bugs": {
+        "url": "https://github.com/shinjiyu/cocos_meta_mcp/issues"
+    },
+    "homepage": "https://github.com/shinjiyu/cocos_meta_mcp#readme",
+    "license": "MIT",
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.12.1",
+        "zod": "^3.24.2"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.39.1",
+        "@types/node": "^22.19.1",
+        "eslint": "^9.39.1",
+        "globals": "^16.5.0",
+        "typescript": "^5.9.3",
+        "typescript-eslint": "^8.48.0"
+    }
+}

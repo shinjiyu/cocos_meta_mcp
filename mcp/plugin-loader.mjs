@@ -32,14 +32,14 @@ function copyDirRecursive(src, dest) {
     for (const ent of fs.readdirSync(src, { withFileTypes: true })) {
         const from = path.join(src, ent.name);
         const to = path.join(dest, ent.name);
-        if (ent.isDirectory()) copyDirRecursive(from, to);
-        else fs.copyFileSync(from, to);
+        if (ent.isDirectory()) {copyDirRecursive(from, to);}
+        else {fs.copyFileSync(from, to);}
     }
 }
 
 function readManifestAt(dir, pluginId) {
     const file = path.join(dir, "manifest.json");
-    if (!fs.existsSync(file)) return null;
+    if (!fs.existsSync(file)) {return null;}
     try {
         const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
         manifest.id = manifest.id ?? pluginId;
@@ -52,7 +52,7 @@ function readManifestAt(dir, pluginId) {
 function readPluginsConfig(projectRoot) {
     ensureDirs(projectRoot);
     const file = pluginsConfigPath(projectRoot);
-    if (!fs.existsSync(file)) return { version: 2, plugins: {} };
+    if (!fs.existsSync(file)) {return { version: 2, plugins: {} };}
     try {
         const raw = JSON.parse(fs.readFileSync(file, "utf8"));
         if (Array.isArray(raw.enabled)) {
@@ -88,7 +88,7 @@ function setPluginRecord(projectRoot, pluginId, patch) {
 }
 
 export function listBuiltinPlugins() {
-    if (!fs.existsSync(BUILTIN_PLUGINS_DIR)) return [];
+    if (!fs.existsSync(BUILTIN_PLUGINS_DIR)) {return [];}
     return fs
         .readdirSync(BUILTIN_PLUGINS_DIR, { withFileTypes: true })
         .filter((d) => d.isDirectory())
@@ -109,7 +109,7 @@ export function listBuiltinPlugins() {
 
 export function listInstalledPlugins(projectRoot) {
     const root = installedRoot(projectRoot);
-    if (!fs.existsSync(root)) return [];
+    if (!fs.existsSync(root)) {return [];}
     return fs
         .readdirSync(root, { withFileTypes: true })
         .filter((d) => d.isDirectory())
@@ -137,7 +137,7 @@ export function listInstalledPlugins(projectRoot) {
 
 export function listAvailablePlugins(projectRoot) {
     const byId = new Map();
-    for (const p of listBuiltinPlugins()) byId.set(p.id, p);
+    for (const p of listBuiltinPlugins()) {byId.set(p.id, p);}
     for (const p of listInstalledPlugins(projectRoot)) {
         byId.set(p.id, { ...byId.get(p.id), ...p, installed: true });
     }
@@ -366,7 +366,7 @@ export function unloadPlugin(pluginId) {
 }
 
 export function registerPluginManagementTools(server, ctx, { recipeLayer }) {
-    if (recipeLayer < 1) return [];
+    if (recipeLayer < 1) {return [];}
 
     const { PROJECT_ROOT } = ctx;
     const handles = [];

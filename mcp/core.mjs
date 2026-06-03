@@ -54,7 +54,7 @@ export function registerCoreTools(server, ctx) {
             [
                 "[Core] 在已打开的 Cocos Creator 中执行（需 fg-cocosmcp）。",
                 "message/eval=主进程；scene-script/scene-eval=场景；open-url=打开预览。",
-                "其它能力请安装插件：COCOSMCP_PLUGINS=candystorm-ir,genbot 或 cocosmcp_plugin_enable。",
+                "其它能力请安装插件：COCOSMCP_PLUGINS=asset-meta,asset-sync,ir-prefab 或 cocosmcp_plugin_enable。",
             ].join(" "),
             {
                 mode: z.enum(["message", "eval", "scene-script", "scene-eval", "open-url"]),
@@ -158,6 +158,6 @@ export function resolveRecipeLayer() {
     }
     const raw = process.env.COCOSMCP_RECIPE_LAYER ?? "0";
     const n = parseInt(raw, 10);
-    if (Number.isNaN(n)) return 0;
+    if (Number.isNaN(n)) {return 0;}
     return Math.min(2, Math.max(0, n));
 }
