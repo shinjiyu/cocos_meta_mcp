@@ -5,7 +5,8 @@
 ## 一键安装（推荐）
 
 ```bash
-cd D:/UGit/extension-tools/cocosmcp
+git clone https://github.com/shinjiyu/cocos_meta_mcp.git
+cd cocos_meta_mcp
 
 # 在 Cocos 工程目录执行，或自动探测工程根
 node scripts/install.mjs

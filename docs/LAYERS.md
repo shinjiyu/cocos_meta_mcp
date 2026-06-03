@@ -1,4 +1,4 @@
-# cocosmcp 分层架构
+# CocosMetaMCP 分层架构
 
 ```text
 L0 Core        cocosmcp_exec（默认）

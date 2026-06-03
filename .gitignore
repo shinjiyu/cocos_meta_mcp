@@ -4,6 +4,9 @@ node_modules/
 Thumbs.db
 .cocosmcp/exec-audit.jsonl
 
+# 宣传稿本地自用，不入库
+docs/COMMUNITY_PROMO.md
+
 # genbot / ir-prefab: local/private only, not in public repo or npm
 mcp/plugins/genbot/
 mcp/plugins/ir-prefab/

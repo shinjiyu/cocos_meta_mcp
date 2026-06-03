@@ -70,6 +70,6 @@ if (bridge.ok) {
     console.log("\n=== 4. meta after refresh ===");
     console.log(JSON.stringify(metaStatus(), null, 2));
 } else {
-    console.log("\n=== 3. SKIP refresh (open Creator + enable fg-candystorm-ir) ===");
+    console.log("\n=== 3. SKIP refresh (open Creator + enable cocos-meta-mcp) ===");
     console.log("Then: npm run sync:ir:meta:wait  OR  MCP candystorm_refresh_meta_in_editor");
 }

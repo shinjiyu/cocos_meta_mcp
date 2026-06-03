@@ -1,4 +1,4 @@
-# cocosmcp（stdio MCP v2）
+# CocosMetaMCP · MCP 服务（stdio v2）
 
 
 

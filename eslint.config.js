@@ -27,7 +27,7 @@ export default tseslint.config(
             "**/dist/**",
             "mcp/plugins/genbot/**",
             "mcp/genbot-runner.mjs",
-            "mcp/plugins/candystorm-ir/**",
+            "mcp/plugins/ir-prefab/**",
         ],
     },
     js.configs.recommended,

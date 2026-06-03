@@ -1,4 +1,4 @@
-# cocosmcp Recipe（Agent 自控注册/提升）
+# CocosMetaMCP Recipe（Agent 自控注册/提升）
 
 > 需 `COCOSMCP_RECIPE_LAYER>=1`。promote 需 `=2`。分层说明见 `LAYERS.md`。
 
