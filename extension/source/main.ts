@@ -60,14 +60,14 @@ function collectImportableRelPaths(projectPath: string): string[] {
 }
 
 async function refreshIrMeta(): Promise<{ ok: boolean; refreshed: string; metaCheck: string[] }> {
-    console.log("[fg-cocosmcp] refresh-asset", CANDYSTORM_DB_URL);
+    console.log("[cocos-meta-mcp] refresh-asset", CANDYSTORM_DB_URL);
     await Editor.Message.request("asset-db", "refresh-asset", CANDYSTORM_DB_URL);
 
     for (const url of collectReimportUrls()) {
         try {
             await Editor.Message.request("asset-db", "reimport-asset", url);
         } catch (e) {
-            console.warn("[fg-cocosmcp] reimport skip", url, e);
+            console.warn("[cocos-meta-mcp] reimport skip", url, e);
         }
     }
 
@@ -76,9 +76,9 @@ async function refreshIrMeta(): Promise<{ ok: boolean; refreshed: string; metaCh
         (rel) => !fs.existsSync(rel),
     );
     if (missing.length) {
-        console.warn("[fg-cocosmcp] meta still missing:", missing);
+        console.warn("[cocos-meta-mcp] meta still missing:", missing);
     } else {
-        console.log("[fg-cocosmcp] all expected .meta present");
+        console.log("[cocos-meta-mcp] all expected .meta present");
     }
 
     return { ok: missing.length === 0, refreshed: CANDYSTORM_DB_URL, metaCheck: missing };
@@ -184,7 +184,7 @@ type ExecBody =
     | ExecSceneEvalBody
     | ExecOpenUrlBody;
 
-const SCENE_EXTENSION_NAME = "fg-cocosmcp";
+const SCENE_EXTENSION_NAME = "cocos-meta-mcp";
 const DEFAULT_PREVIEW_PORT = 7456;
 
 async function queryPreviewPort(preferred?: number): Promise<number> {
@@ -318,7 +318,7 @@ function startHttpBridge() {
         if (req.method === "GET" && req.url === "/health") {
             send(200, {
                 ok: true,
-                service: "fg-cocosmcp",
+                service: "cocos-meta-mcp",
                 cocosCreatorVersion:
                     (Editor as { App?: { version?: string } }).App?.version ??
                     (Editor as { versions?: { cocos?: string } }).versions?.cocos ??
@@ -381,7 +381,7 @@ function startHttpBridge() {
     });
 
     httpServer.listen(port, "127.0.0.1", () => {
-        console.log(`[fg-cocosmcp] MCP HTTP bridge http://127.0.0.1:${port}`);
+        console.log(`[cocos-meta-mcp] MCP HTTP bridge http://127.0.0.1:${port}`);
     });
 }
 
@@ -391,11 +391,11 @@ export function load() {
     const autoMeta =
         process.env.COCOSMCP_AUTO_META === "1" || process.env.CANDYSTORM_IR_AUTO_META === "1";
     if (autoMeta) {
-        console.log("[fg-cocosmcp] auto meta refresh scheduled (COCOSMCP_AUTO_META=1)");
+        console.log("[cocos-meta-mcp] auto meta refresh scheduled (COCOSMCP_AUTO_META=1)");
         setTimeout(() => {
             refreshIrMeta()
-                .then((r) => console.log("[fg-cocosmcp] auto refresh done", r))
-                .catch((e) => console.error("[fg-cocosmcp] auto refresh failed", e));
+                .then((r) => console.log("[cocos-meta-mcp] auto refresh done", r))
+                .catch((e) => console.error("[cocos-meta-mcp] auto refresh failed", e));
         }, 8000);
     }
 }

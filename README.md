@@ -40,7 +40,7 @@ npm run setup -- --project-root D:/path/to/your-cocos-project
 ### Creator
 
 1. 完全退出并重启 Creator，打开对应工程  
-2. **扩展 → 扩展管理器 → 项目** → 启用 **fg-cocosmcp**  
+2. **扩展 → 扩展管理器 → 项目** → 启用 **cocos-meta-mcp**  
 3. 控制台：`MCP HTTP bridge http://127.0.0.1:3921`
 
 ### Cursor
@@ -49,7 +49,7 @@ npm run setup -- --project-root D:/path/to/your-cocos-project
 
 ## 验证
 
-1. Creator 中启用 **fg-cocosmcp**  
+1. Creator 中启用 **cocos-meta-mcp**  
 2. Cursor Agent 调用 `cocosmcp_health` 或 `cocosmcp_exec`
 
 ## 核心能力：脚本自动提升为 Tool

@@ -53,7 +53,7 @@ export function register(server, ctx) {
     handles.push(
         server.tool(
             t("cocosmcp_refresh_asset_meta"),
-            `[Creator ${ver}] Refresh asset-db via HTTP when Creator and fg-cocosmcp are running`,
+            `[Creator ${ver}] Refresh asset-db via HTTP when Creator and cocos-meta-mcp are running`,
             {},
             async () => {
                 try {
@@ -67,7 +67,7 @@ export function register(server, ctx) {
                                         {
                                             error: "Creator bridge not reachable",
                                             url: CREATOR_BRIDGE,
-                                            hint: "Open Creator + enable fg-cocosmcp",
+                                            hint: "Open Creator + enable cocos-meta-mcp",
                                             health,
                                         },
                                         null,

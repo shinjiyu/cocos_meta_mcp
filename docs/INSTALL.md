@@ -28,9 +28,9 @@ cd D:/你的工程 && cocos-meta-mcp setup
 | 组件 | 目标 |
 |------|------|
 | **Cursor MCP** | `%USERPROFILE%\.cursor\mcp.json` |
-| **Creator 扩展** | `{工程}/extensions/fg-cocosmcp`（**项目扩展**） |
+| **Creator 扩展** | `{工程}/extensions/cocos-meta-mcp`（**项目扩展**） |
 
-安装后：**打开该工程** → **扩展 → 扩展管理器 → 项目** → 启用 **fg-cocosmcp**。
+安装后：**打开该工程** → **扩展 → 扩展管理器 → 项目** → 启用 **cocos-meta-mcp**。
 
 ## 工程根自动探测
 
@@ -76,7 +76,7 @@ node scripts/install-extension.mjs --mode project --project-root D:/proj
 目录结构（与官方打包要求一致）：
 
 ```text
-{工程}/extensions/fg-cocosmcp/
+{工程}/extensions/cocos-meta-mcp/
   dist/
   package.json
 ```
@@ -91,6 +91,6 @@ node scripts/install-extension.mjs --mode project --project-root D:/proj
 node scripts/install-extension.mjs --mode global-legacy
 ```
 
-**每个 Cocos 工程需各自安装一次**，或把 `extensions/fg-cocosmcp` 提交进 Git 供团队共用。
+**每个 Cocos 工程需各自安装一次**，或把 `extensions/cocos-meta-mcp` 提交进 Git 供团队共用。
 
 MCP 的 `cwd` 始终指向**当前打开的 Cocos 工程根**，与你在哪个工程里安装了扩展一致。

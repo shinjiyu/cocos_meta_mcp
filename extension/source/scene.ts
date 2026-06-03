@@ -3,7 +3,7 @@ import { join } from "path";
 module.paths.push(join(Editor.App.path, "node_modules"));
 
 /**
- * 场景进程脚本：供 cocosmcp_exec scene-eval / scene-script（name=fg-cocosmcp）调用。
+ * 场景进程脚本：供 cocosmcp_exec scene-eval / scene-script（name=cocos-meta-mcp）调用。
  */
 export const methods = {
     /**

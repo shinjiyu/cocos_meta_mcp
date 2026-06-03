@@ -30,7 +30,7 @@ Options:
   --project-root <path>   Cocos project root (auto-detected if omitted)
   --repo <path>           cocosmcp repo root (default: auto)
   --ir-root <path>        COCOSMCP_IR_ROOT (optional)
-  --profile <name>        minimal | workflow | admin | all (default: minimal)
+  --profile <name>        minimal | workflow | admin | all (default: workflow)
   --target <where>        global | project (default: global)
   --config <path>         Override mcp.json output path
   --dry-run               Print merged config only
@@ -41,7 +41,7 @@ Options:
 
 function parseArgs(argv) {
     const opts = {
-        profile: "minimal",
+        profile: "workflow",
         target: "global",
         dryRun: false,
         skipNpm: false,
@@ -77,42 +77,55 @@ function normalizePath(p) {
     return path.resolve(p).replace(/\\/g, "/");
 }
 
-function buildServers({ repo, projectRoot, irRoot, profile }) {
+/** npm 全局包用 `cocos-meta-mcp`；源码开发用 node + index.mjs */
+function resolveMcpLaunch(repo) {
     const indexMjs = normalizePath(path.join(mcpDir(repo), "index.mjs"));
+    const pkgFile = path.join(repo, "package.json");
+    let isNpmPackage = false;
+    if (fs.existsSync(pkgFile)) {
+        try {
+            isNpmPackage = JSON.parse(fs.readFileSync(pkgFile, "utf8")).name === "cocos-meta-mcp";
+        } catch {
+            /* fall through */
+        }
+    }
+    if (isNpmPackage && fs.existsSync(path.join(repo, "bin", "cocos-meta-mcp.mjs"))) {
+        return { command: "cocos-meta-mcp", args: [] };
+    }
+    return { command: "node", args: [indexMjs] };
+}
+
+function mcpServerBlock({ repo, projectRoot, env }) {
+    const launch = resolveMcpLaunch(repo);
+    return {
+        command: launch.command,
+        ...(launch.args.length ? { args: launch.args } : {}),
+        cwd: normalizePath(projectRoot),
+        env,
+    };
+}
+
+function buildServers({ repo, projectRoot, irRoot, profile }) {
     const cwd = normalizePath(projectRoot);
     const baseEnv = {};
     if (irRoot) {
         baseEnv.COCOSMCP_IR_ROOT = normalizePath(irRoot);
     }
 
+    const pluginEnv = {
+        ...baseEnv,
+        COCOSMCP_PLUGINS: "asset-meta,asset-sync,ir-prefab",
+    };
+
     const minimal = {
-        cocosmcp: {
-            command: "node",
-            args: [indexMjs],
-            cwd,
-            env: { ...baseEnv },
-        },
-    };
-
-    const workflowEnv = {
-        ...baseEnv,
-        COCOSMCP_PLUGINS: "asset-meta,asset-sync,ir-prefab",
-    };
-
-    const adminEnv = {
-        COCOSMCP_RECIPE_LAYER: "2",
-        COCOSMCP_PLUGINS: "asset-meta,asset-sync,ir-prefab",
-        ...baseEnv,
+        cocosmcp: mcpServerBlock({ repo, projectRoot: cwd, env: { ...baseEnv } }),
     };
 
     const workflow = {
         ...minimal,
         "cocosmcp-workflow": {
             comment: "Asset / IR plugins (Creator 3.8.8)",
-            command: "node",
-            args: [indexMjs],
-            cwd,
-            env: workflowEnv,
+            ...mcpServerBlock({ repo, projectRoot: cwd, env: pluginEnv }),
         },
     };
 
@@ -120,10 +133,11 @@ function buildServers({ repo, projectRoot, irRoot, profile }) {
         ...workflow,
         "cocosmcp-admin": {
             comment: "Agent recipe L2 + plugins",
-            command: "node",
-            args: [indexMjs],
-            cwd,
-            env: adminEnv,
+            ...mcpServerBlock({
+                repo,
+                projectRoot: cwd,
+                env: { COCOSMCP_RECIPE_LAYER: "2", ...pluginEnv },
+            }),
         },
     };
 

@@ -21,6 +21,7 @@ export const PROJECT_ROOT = path.resolve(
 );
 export const DEFAULT_IR_ROOT = "D:/svn/new_game/糖果风暴客户端资源/export/cocosmcp_ir";
 export const GAME_ART_ROOT = path.join(PROJECT_ROOT, "assets/asset_bundles/game_art/ab/candystorm");
+export const CREATOR_EXTENSION_NAME = "cocos-meta-mcp";
 export const CREATOR_BRIDGE =
     process.env.COCOSMCP_HTTP_URL ||
     process.env.CANDYSTORM_IR_HTTP_URL ||
@@ -201,6 +202,7 @@ export function createContext() {
     return {
         PROJECT_ROOT,
         MCP_ROOT,
+        CREATOR_EXTENSION_NAME,
         CREATOR_BRIDGE,
         GAME_ART_ROOT,
         irRoot,

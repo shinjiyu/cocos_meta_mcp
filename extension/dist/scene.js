@@ -4,7 +4,7 @@ exports.methods = void 0;
 const path_1 = require("path");
 module.paths.push((0, path_1.join)(Editor.App.path, "node_modules"));
 /**
- * 场景进程脚本：供 cocosmcp_exec scene-eval / scene-script（name=fg-cocosmcp）调用。
+ * 场景进程脚本：供 cocosmcp_exec scene-eval / scene-script（name=cocos-meta-mcp）调用。
  */
 exports.methods = {
     /**

@@ -6,7 +6,7 @@ import {
 } from "./recipe-registry.mjs";
 
 export function registerCoreTools(server, ctx) {
-    const { PROJECT_ROOT, CREATOR_BRIDGE, fetchCreatorBridge } = ctx;
+    const { PROJECT_ROOT, CREATOR_BRIDGE, CREATOR_EXTENSION_NAME, fetchCreatorBridge } = ctx;
     const handles = [];
     const includeHealth = process.env.COCOSMCP_CORE_HEALTH === "1";
 
@@ -14,7 +14,7 @@ export function registerCoreTools(server, ctx) {
         handles.push(
             server.tool(
                 "cocosmcp_health",
-                "检查 fg-cocosmcp HTTP bridge 是否可达（比 exec 更轻）。",
+                `检查 ${CREATOR_EXTENSION_NAME} HTTP bridge 是否可达（比 exec 更轻）。`,
                 {},
                 async () => {
                     try {
@@ -52,7 +52,7 @@ export function registerCoreTools(server, ctx) {
         server.tool(
             "cocosmcp_exec",
             [
-                "[Core] 在已打开的 Cocos Creator 中执行（需 fg-cocosmcp）。",
+                `[Core] 在已打开的 Cocos Creator 中执行（需 ${CREATOR_EXTENSION_NAME}）。`,
                 "message/eval=主进程；scene-script/scene-eval=场景；open-url=打开预览。",
                 "其它能力请安装插件：COCOSMCP_PLUGINS=asset-meta,asset-sync,ir-prefab 或 cocosmcp_plugin_enable。",
             ].join(" "),
@@ -87,7 +87,7 @@ export function registerCoreTools(server, ctx) {
                                             ok: false,
                                             error: "Creator bridge not reachable",
                                             url: CREATOR_BRIDGE,
-                                            hint: "Open Creator, enable fg-cocosmcp",
+                                            hint: `Open Creator, enable ${CREATOR_EXTENSION_NAME}`,
                                             health: result.health,
                                         },
                                         null,

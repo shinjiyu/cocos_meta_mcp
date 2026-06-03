@@ -1,18 +1,13 @@
 #!/usr/bin/env node
 /**
- * Install fg-cocosmcp Creator extension (project per Creator 3.8 docs, or global-legacy).
+ * Install cocos-meta-mcp Creator extension (project per Creator 3.8 docs, or global-legacy).
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateExtensionInstall, writeInstalledPackageJson } from "./lib/extension-manifest.mjs";
-import {
-    cocosGlobalExtensionsDir,
-    extensionDestDir,
-    extensionSourceDir,
-    packageRoot,
-} from "./lib/paths.mjs";
+import { CREATOR_EXTENSION_NAME, cocosGlobalExtensionsDir, extensionDestDir, extensionSourceDir, packageRoot } from "./lib/paths.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -31,9 +26,9 @@ Options:
 After install (Creator 3.8 官方方式 — 项目扩展):
   1. 完全退出并重启 Cocos Creator，打开对应工程
   2. 扩展 → 扩展管理器 → **项目** 标签
-  3. 找到 fg-cocosmcp → 启用
+  3. 找到 ${CREATOR_EXTENSION_NAME} → 启用
 
-  路径: {工程}/extensions/fg-cocosmcp
+  路径: {工程}/extensions/${CREATOR_EXTENSION_NAME}
   文档: https://docs.cocos.com/creator/3.8/manual/zh/editor/extension/install.html
 
   --mode global-legacy 会装到 ~/.CocosCreator/extensions（非 3.8 中文文档路径，不推荐）
@@ -195,7 +190,7 @@ function main() {
     console.error(`[install-extension] done: ${dest}`);
     const tab = destMode === "global-legacy" ? "全局(legacy)" : "项目";
     console.error(
-        `[install-extension] 重启 Creator 并打开工程 → 扩展 → 扩展管理器 → ${tab} → 启用 fg-cocosmcp`,
+        `[install-extension] 重启 Creator 并打开工程 → 扩展 → 扩展管理器 → ${tab} → 启用 ${CREATOR_EXTENSION_NAME}`,
     );
 }
 

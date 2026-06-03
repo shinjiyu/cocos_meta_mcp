@@ -10,7 +10,19 @@
 | Creator 扩展（预编译 dist） | `extension/` |
 | 安装脚本 | `scripts/` + `cocos-meta-mcp setup` |
 
-**不包含**：`genbot` 插件、`genbot-runner.mjs`（私有/本地）
+## 内置 MCP 插件（随 npm 包发布）
+
+| 插件 id | 说明 |
+|---------|------|
+| `asset-meta` | .meta 检查 / 导入 / 刷新 |
+| `asset-sync` | 外部资源目录同步 |
+| `ir-prefab` | IR prefab 脚本 |
+
+`cocos-meta-mcp setup` **默认 profile=workflow**，会在 Cursor `mcp.json` 写入 `COCOSMCP_PLUGINS=asset-meta,asset-sync,ir-prefab`。
+
+仅要 `cocosmcp_exec` 时可：`cocos-meta-mcp setup --cursor-profile minimal`
+
+**不包含**：`genbot` 插件（私有/本地）
 
 ## 安装
 
@@ -26,8 +38,7 @@ npm install -D cocos-meta-mcp
 # Cursor MCP + Creator 项目扩展
 cocos-meta-mcp setup --project-root /path/to/cocos/project
 
-# 分步
-cocos-meta-mcp setup extension --mode project --project-root /path/to/cocos/project
+# 分步（默认 workflow = 含插件）
 cocos-meta-mcp setup cursor --project-root /path/to/cocos/project
 ```
 

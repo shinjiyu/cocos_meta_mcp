@@ -56,7 +56,9 @@ export function mcpDir(root = packageRoot()) {
     return path.join(root, "mcp");
 }
 
-export function extensionDestDir({ mode, projectRoot, extensionName = "fg-cocosmcp" }) {
+export const CREATOR_EXTENSION_NAME = "cocos-meta-mcp";
+
+export function extensionDestDir({ mode, projectRoot, extensionName = CREATOR_EXTENSION_NAME }) {
     if (mode === "global" || mode === "global-legacy") {
         return path.join(cocosGlobalExtensionsDir(), extensionName);
     }

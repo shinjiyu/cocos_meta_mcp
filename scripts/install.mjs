@@ -24,7 +24,7 @@ Options:
   --no-auto-project           Require --project-root; disable auto detection
   --repo <path>               Package/repo root (default: auto)
   --ir-root <path>            COCOSMCP_IR_ROOT for Cursor MCP env
-  --cursor-profile <name>     minimal | workflow | admin | all (default: minimal)
+  --cursor-profile <name>     minimal | workflow | admin | all (default: workflow)
   --cursor-target <where>     global | project (default: global)
   --extension-mode <mode>     project | none | global-legacy (default: project)
   --extension-link            Junction/symlink extension dir (dev)
@@ -42,7 +42,7 @@ Auto detection order:
 
 function parseArgs(argv) {
     const opts = {
-        cursorProfile: "minimal",
+        cursorProfile: "workflow",
         cursorTarget: "global",
         extensionMode: "project",
         extensionLink: false,

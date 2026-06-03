@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
+import { CREATOR_EXTENSION_NAME } from "./context.mjs";
 import { promotedRecipeToolName } from "./tool-naming.mjs";
 
 const RECIPE_NAME_RE = /^[a-z][a-z0-9_]{0,63}$/;
@@ -244,7 +245,7 @@ export function saveRecipe(projectRoot, recipe, { overwrite = false } = {}) {
     if (recipe.url) {clean.url = recipe.url;}
     if (recipe.port !== undefined) {clean.port = recipe.port;}
     if (recipe.mode === "scene-script") {
-        clean.sceneExtension = recipe.sceneExtension ?? recipe.extensionName ?? "fg-cocosmcp";
+        clean.sceneExtension = recipe.sceneExtension ?? recipe.extensionName ?? CREATOR_EXTENSION_NAME;
     }
 
     fs.writeFileSync(file, `${JSON.stringify(clean, null, 2)}\n`, "utf8");
@@ -334,7 +335,7 @@ export function buildRecipeExecBody(recipe, params = {}) {
     if (recipe.mode === "scene-script") {
         return {
             mode: "scene-script",
-            name: recipe.sceneExtension ?? recipe.extensionName ?? "fg-cocosmcp",
+            name: recipe.sceneExtension ?? recipe.extensionName ?? CREATOR_EXTENSION_NAME,
             method: recipe.method,
             args: recipe.args ?? [],
         };

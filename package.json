@@ -1,11 +1,11 @@
 {
     "name": "cocos-meta-mcp",
-    "version": "2.1.2",
-    "description": "Cocos Creator MCP server (stdio) + fg-cocosmcp extension installer for Cursor",
+    "version": "2.1.4",
+    "description": "Cocos Creator MCP server (stdio) + cocos-meta-mcp extension installer for Cursor",
     "type": "module",
     "main": "./mcp/index.mjs",
     "bin": {
-        "cocos-meta-mcp": "./bin/cocos-meta-mcp.mjs"
+        "cocos-meta-mcp": "bin/cocos-meta-mcp.mjs"
     },
     "files": [
         "bin",
@@ -62,7 +62,8 @@
         "mcp",
         "model-context-protocol",
         "cursor",
-        "game-dev"
+        "game-dev",
+        "plugin",
     ],
     "repository": {
         "type": "git",
