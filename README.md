@@ -24,7 +24,7 @@ Cocos Creator MCP + 扩展桥，让 Cursor 等客户端通过 AI 驱动编辑器
 
 ```bash
 npm install -g cocos-meta-mcp
-cocos-meta-mcp-setup --project-root D:/path/to/your-cocos-project
+cocos-meta-mcp setup --project-root D:/path/to/your-cocos-project
 ```
 
 ### 克隆仓库（开发）

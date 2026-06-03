@@ -18,9 +18,9 @@ npm run setup
 npm 全局包：
 
 ```bash
-cocos-meta-mcp-setup --project-root D:/你的工程
+cocos-meta-mcp setup --project-root D:/你的工程
 # 或在工程目录下
-cd D:/你的工程 && cocos-meta-mcp-setup
+cd D:/你的工程 && cocos-meta-mcp setup
 ```
 
 ## 默认行为

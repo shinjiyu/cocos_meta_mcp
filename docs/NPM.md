@@ -1,6 +1,6 @@
 # npm 发布
 
-包名：**`cocos-meta-mcp`**（v2.1.0+）
+包名：**`cocos-meta-mcp`**（v2.1.1+）
 
 包含：
 
@@ -8,7 +8,7 @@
 |------|------|
 | stdio MCP 服务 | `mcp/` + CLI `cocos-meta-mcp` |
 | Creator 扩展（预编译 dist） | `extension/` |
-| 安装脚本 | `scripts/` + CLI `cocos-meta-mcp-setup` |
+| 安装脚本 | `scripts/` + `cocos-meta-mcp setup` |
 
 **不包含**：`genbot` 插件、`genbot-runner.mjs`（私有/本地）
 
@@ -24,11 +24,11 @@ npm install -D cocos-meta-mcp
 
 ```bash
 # Cursor MCP + Creator 项目扩展
-cocos-meta-mcp-setup --project-root /path/to/cocos/project
+cocos-meta-mcp setup --project-root /path/to/cocos/project
 
 # 分步
-cocos-meta-mcp-setup extension --mode project --project-root /path/to/cocos/project
-cocos-meta-mcp-setup cursor --project-root /path/to/cocos/project
+cocos-meta-mcp setup extension --mode project --project-root /path/to/cocos/project
+cocos-meta-mcp setup cursor --project-root /path/to/cocos/project
 ```
 
 ## Cursor mcp.json 示例（npm 全局安装后）
