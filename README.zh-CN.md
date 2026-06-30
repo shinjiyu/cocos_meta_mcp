@@ -91,10 +91,17 @@ cocosmcp_promote_recipe ──► cocosmcp_r_{name}（独立 Tool，通知 Curso
 
 详见 [`docs/RECIPES.md`](docs/RECIPES.md)。
 
+## Cursor Agent Skills
+
+复杂工作流在 **[`skills/`](skills/)**（安装到 `~/.cursor/skills/` 或 `{工程}/.cursor/skills/`）。Creator 扩展与 `cocosmcp_exec` 保持薄桥接；Skills 教 Agent 如何组合 recipe 与 eval。
+
+详见 [`docs/SKILLS.md`](docs/SKILLS.md)、[`skills/registry.md`](skills/registry.md)。
+
 ## 文档
 
 | 主题 | 链接 |
 |------|------|
+| **Cursor Agent Skills** | [`skills/`](skills/) · [`docs/SKILLS.md`](docs/SKILLS.md) |
 | **MCP 插件安装** | [`docs/PLUGINS.md`](docs/PLUGINS.md) |
 | Recipe / 提升详解 | [`docs/RECIPES.md`](docs/RECIPES.md) |
 | 分层架构与插件 | [`docs/LAYERS.md`](docs/LAYERS.md) |

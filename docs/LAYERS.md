@@ -1,10 +1,13 @@
 # CocosMetaMCP 分层架构
 
 ```text
+L-Skills       skills/（Cursor Agent Skills，非 MCP tool）
 L0 Core        cocosmcp_exec（默认）
 L1 Recipe      COCOSMCP_RECIPE_LAYER=1|2
 Plugins        全量安装到 {工程}/.cocosmcp/installed/{id}/
 ```
+
+**L-Skills** 与 MCP 层互补：扩展 + exec 只做 eval/message 桥接；多步流程、禁止项、验收清单写在 [`skills/`](../skills/)（见 [`SKILLS.md`](SKILLS.md)）。不要把复杂 Agent 编排塞进 Creator 扩展或 MCP 插件。
 
 ## 插件「全量安装」
 

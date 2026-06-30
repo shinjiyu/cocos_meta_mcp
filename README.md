@@ -91,10 +91,17 @@ For `cocosmcp_exec` only: `COCOSMCP_RECIPE_LAYER=0` (`setup --cursor-profile min
 
 See [`docs/RECIPES.md`](docs/RECIPES.md).
 
+## Cursor Agent Skills
+
+Complex workflows live in **[`skills/`](skills/)** (install to `~/.cursor/skills/` or `{project}/.cursor/skills/`). The Creator extension and `cocosmcp_exec` stay thin; Skills teach the Agent how to combine recipes and eval.
+
+See [`docs/SKILLS.md`](docs/SKILLS.md) and [`skills/registry.md`](skills/registry.md).
+
 ## Documentation
 
 | Topic | Link |
 |-------|------|
+| **Cursor Agent Skills** | [`skills/`](skills/) · [`docs/SKILLS.md`](docs/SKILLS.md) |
 | **MCP plugin install** | [`docs/PLUGINS.md`](docs/PLUGINS.md) |
 | Recipes / promote | [`docs/RECIPES.md`](docs/RECIPES.md) |
 | Layered architecture | [`docs/LAYERS.md`](docs/LAYERS.md) |

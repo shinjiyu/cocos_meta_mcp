@@ -36,8 +36,11 @@
         "docs/PLUGINS.md",
         "docs/EXEC.md",
         "docs/RECIPES.md",
+        "docs/CREATOR_CONSOLE.md",
+        "docs/SKILLS.md",
         "docs/NPM.md",
         "docs/NPM.en.md",
+        "skills",
         "README.md",
         "README.zh-CN.md"
     ],
