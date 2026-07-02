@@ -3,6 +3,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import {
+    listBridgeInstances,
+    resolveBridgeUrl,
+} from "./bridge-registry.mjs";
 
 async function loadGenbotRunner() {
     try {
@@ -38,6 +42,19 @@ export const EXPECTED_META = [
 
 export function irRoot() {
     return process.env.COCOSMCP_IR_ROOT || process.env.CANDYSTORM_IR_ROOT || DEFAULT_IR_ROOT;
+}
+
+export function resolveAuditProjectRoot(projectRoot) {
+    return path.resolve(projectRoot || PROJECT_ROOT);
+}
+
+export async function resolveBridgeForProject(projectRoot, { probe = false } = {}) {
+    const target = path.resolve(projectRoot || PROJECT_ROOT);
+    return resolveBridgeUrl(target, {
+        fallbackUrl: CREATOR_BRIDGE,
+        defaultProjectRoot: PROJECT_ROOT,
+        probe,
+    });
 }
 
 export function runNodeScript(scriptRel, args = [], envExtra = {}) {
@@ -83,8 +100,25 @@ export function metaStatus() {
     };
 }
 
-export async function fetchCreatorBridge(pathname, method = "GET", jsonBody) {
-    const url = `${CREATOR_BRIDGE.replace(/\/$/, "")}${pathname}`;
+export async function fetchCreatorBridge(pathname, method = "GET", jsonBody, options = {}) {
+    const { projectRoot } = options;
+    const resolved = await resolveBridgeForProject(projectRoot, { probe: false });
+    if (!resolved.ok || !resolved.url) {
+        return {
+            status: 0,
+            ok: false,
+            body: {
+                ok: false,
+                error: resolved.error ?? "Creator bridge not resolved",
+                hint: resolved.hint,
+                projectRoot: projectRoot || PROJECT_ROOT,
+            },
+            bridge: null,
+            resolve: resolved,
+        };
+    }
+
+    const url = `${resolved.url.replace(/\/$/, "")}${pathname}`;
     const init = { method };
     if (jsonBody !== undefined) {
         init.headers = { "Content-Type": "application/json" };
@@ -98,7 +132,13 @@ export async function fetchCreatorBridge(pathname, method = "GET", jsonBody) {
     } catch {
         body = { raw: text };
     }
-    return { status: res.status, ok: res.ok, body };
+    return {
+        status: res.status,
+        ok: res.ok,
+        body,
+        bridge: resolved.url,
+        resolve: resolved,
+    };
 }
 
 export async function runGenbotGenerate({ prefab, regenBind = false, dryRun = false, preferEditor = false }) {
@@ -210,6 +250,9 @@ export function createContext() {
         runNodeScript,
         metaStatus,
         fetchCreatorBridge,
+        resolveBridgeForProject,
+        listBridgeInstances,
+        resolveAuditProjectRoot,
         runGenbotGenerate,
     };
 }

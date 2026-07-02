@@ -21,7 +21,7 @@ import { registerRecipeLayerTools } from "./recipe-layer.mjs";
 
 const server = new McpServer({
     name: "cocosmcp",
-    version: "2.2.0",
+    version: "2.3.0",
 });
 
 async function main() {

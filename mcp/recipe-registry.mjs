@@ -2,7 +2,8 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { CREATOR_EXTENSION_NAME } from "./context.mjs";
+import { validateBridgeProject } from "./bridge-registry.mjs";
+import { CREATOR_EXTENSION_NAME, PROJECT_ROOT } from "./context.mjs";
 import { promotedRecipeToolName } from "./tool-naming.mjs";
 
 const RECIPE_NAME_RE = /^[a-z][a-z0-9_]{0,63}$/;
@@ -354,31 +355,52 @@ export function buildRecipeExecBody(recipe, params = {}) {
     };
 }
 
-export async function executeCreatorBody(fetchCreatorBridge, body) {
-    const health = await fetchCreatorBridge("/health");
+export async function executeCreatorBody(fetchCreatorBridge, body, { projectRoot } = {}) {
+    const targetRoot = projectRoot ?? PROJECT_ROOT;
+    const health = await fetchCreatorBridge("/health", "GET", undefined, { projectRoot: targetRoot });
     if (!health.ok) {
         return {
             ok: false,
             error: "Creator bridge not reachable",
             health,
+            bridge: health.bridge,
+            projectRoot: targetRoot,
+            resolve: health.resolve,
         };
     }
-    const exec = await fetchCreatorBridge("/exec", "POST", body);
+
+    const match = validateBridgeProject(health.body?.projectPath, targetRoot);
+    if (!match.ok) {
+        return {
+            ok: false,
+            error: match.error,
+            expectedProject: match.expected,
+            actualProject: match.actual,
+            health: health.body,
+            bridge: health.bridge,
+            projectRoot: targetRoot,
+        };
+    }
+
+    const exec = await fetchCreatorBridge("/exec", "POST", body, { projectRoot: targetRoot });
     return {
         ok: exec.ok && exec.body?.ok !== false,
         status: exec.status,
+        bridge: exec.bridge,
+        projectRoot: targetRoot,
         ...exec.body,
     };
 }
 
-export async function runRecipe(projectRoot, recipeName, params, fetchCreatorBridge) {
+export async function runRecipe(projectRoot, recipeName, params, fetchCreatorBridge, { execProjectRoot } = {}) {
     const recipe = getRecipe(projectRoot, recipeName);
     if (!recipe || recipe.error) {
         return { ok: false, error: `recipe not found: ${recipeName}` };
     }
     const body = buildRecipeExecBody(recipe, params);
     const started = Date.now();
-    const result = await executeCreatorBody(fetchCreatorBridge, body);
+    const targetRoot = execProjectRoot ?? projectRoot;
+    const result = await executeCreatorBody(fetchCreatorBridge, body, { projectRoot: targetRoot });
     appendExecAudit(projectRoot, {
         source: "recipe",
         recipeName,

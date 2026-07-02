@@ -15,7 +15,7 @@ import {
 export function registerRecipeLayerTools(server, ctx, recipeLayer) {
     if (recipeLayer < 1) {return { handles: [], promoted: { restored: [], failed: [] } };}
 
-    const { PROJECT_ROOT, fetchCreatorBridge } = ctx;
+    const { PROJECT_ROOT, fetchCreatorBridge, resolveAuditProjectRoot } = ctx;
     const handles = [];
     const allowPromote = recipeLayer >= 2;
 
@@ -149,9 +149,13 @@ export function registerRecipeLayerTools(server, ctx, recipeLayer) {
             {
                 name: z.string(),
                 params: z.record(z.unknown()).optional(),
+                projectRoot: z.string().optional(),
             },
-            async ({ name, params }) => {
-                const result = await runRecipe(PROJECT_ROOT, name, params ?? {}, fetchCreatorBridge);
+            async ({ name, params, projectRoot }) => {
+                const targetRoot = resolveAuditProjectRoot(projectRoot);
+                const result = await runRecipe(PROJECT_ROOT, name, params ?? {}, fetchCreatorBridge, {
+                    execProjectRoot: targetRoot,
+                });
                 return {
                     content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
                     isError: !result.ok,

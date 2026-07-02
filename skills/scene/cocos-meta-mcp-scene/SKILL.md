@@ -16,7 +16,7 @@ description: >-
 
 验证连接：`cocosmcp_exec` + `GET /health` 或 `mode: eval` 返回 `Editor.Project.path`。
 
-**单端口限制**：同一时刻只有一个 Creator 实例占 3921；多开工程会混命令。
+**单端口限制**：多开时各 Creator 自动注册独立端口；跨工程用 `cocosmcp_list_bridges` + `projectRoot` 参数。
 
 ---
 
@@ -170,7 +170,7 @@ PowerShell：`[guid]::NewGuid().ToString()`。写入 UTF-8 无 BOM。
 | 现象 | 检查 |
 |------|------|
 | 保存弹窗 | 当前 scene dirty？补 `save-scene` 或改用磁盘流程 |
-| MCP 改错工程 | `/health` 的 projectPath；3921 被另一个 Creator 占用 |
+| MCP 改错工程 | `cocosmcp_list_bridges`；`exec` 传正确 `projectRoot`；校验失败会报 mismatch |
 | 场景黑屏 | 脚本 __type__ 错误；Camera/Layer 配置 |
 | 组件未绑定 | scene 内 `@property` 未 set-property；磁盘 patch 后需 refresh |
 | uuid 冲突 | 复制 scene 时连同 .meta 一起复制 |

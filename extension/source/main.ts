@@ -1,5 +1,6 @@
 import fs from "fs";
 import http from "http";
+import os from "os";
 import path from "path";
 
 /**
@@ -89,6 +90,106 @@ export const methods = {
 };
 
 let httpServer: http.Server | null = null;
+let boundProjectPath: string | null = null;
+let boundPort: number | null = null;
+
+const BRIDGE_SERVICE = "cocos-meta-mcp";
+
+function bridgeRegistryHome(): string {
+    if (process.env.COCOSMCP_REGISTRY_HOME) {
+        return path.resolve(process.env.COCOSMCP_REGISTRY_HOME);
+    }
+    if (process.platform === "win32") {
+        const base = process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
+        return path.join(base, "cocos-meta-mcp");
+    }
+    return path.join(os.homedir(), ".cocos-meta-mcp");
+}
+
+function bridgeRegistryPath(): string {
+    return path.join(bridgeRegistryHome(), "instances.json");
+}
+
+function normalizeProjectPath(projectPath: string): string {
+    let resolved = path.resolve(projectPath);
+    if (process.platform === "win32") {
+        resolved = resolved.replace(/\\/g, "/");
+        if (resolved.length >= 2 && resolved[1] === ":") {
+            resolved = resolved.charAt(0).toLowerCase() + resolved.slice(1);
+        }
+    }
+    return resolved;
+}
+
+function readBridgeRegistry(): { version: number; instances: Record<string, unknown> } {
+    const file = bridgeRegistryPath();
+    if (!fs.existsSync(file)) {
+        return { version: 1, instances: {} };
+    }
+    try {
+        const raw = JSON.parse(fs.readFileSync(file, "utf8")) as {
+            instances?: Record<string, unknown>;
+        };
+        return { version: 1, instances: raw.instances ?? {} };
+    } catch {
+        return { version: 1, instances: {} };
+    }
+}
+
+function writeBridgeRegistry(instances: Record<string, unknown>): void {
+    fs.mkdirSync(bridgeRegistryHome(), { recursive: true });
+    const file = bridgeRegistryPath();
+    const tmp = `${file}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, `${JSON.stringify({ version: 1, instances }, null, 2)}\n`, "utf8");
+    fs.renameSync(tmp, file);
+}
+
+function upsertBridgeRegistry(projectPath: string, port: number): void {
+    const key = normalizeProjectPath(projectPath);
+    const registry = readBridgeRegistry();
+    registry.instances[key] = {
+        projectPath: path.resolve(projectPath),
+        port,
+        pid: process.pid,
+        service: BRIDGE_SERVICE,
+        updatedAt: new Date().toISOString(),
+    };
+    writeBridgeRegistry(registry.instances);
+}
+
+function removeBridgeRegistry(projectPath: string): void {
+    const key = normalizeProjectPath(projectPath);
+    const registry = readBridgeRegistry();
+    if (!registry.instances[key]) {
+        return;
+    }
+    delete registry.instances[key];
+    writeBridgeRegistry(registry.instances);
+}
+
+function listenHttpServer(server: http.Server, preferredPort: number): Promise<number> {
+    return new Promise((resolve, reject) => {
+        const attempt = (port: number) => {
+            const onError = (err: NodeJS.ErrnoException) => {
+                if (err.code === "EADDRINUSE" && port !== 0) {
+                    server.removeListener("error", onError);
+                    console.warn(`[cocos-meta-mcp] port ${port} in use, trying dynamic port`);
+                    attempt(0);
+                    return;
+                }
+                reject(err);
+            };
+            server.once("error", onError);
+            server.listen(port, "127.0.0.1", () => {
+                server.removeListener("error", onError);
+                const addr = server.address();
+                const actual = typeof addr === "object" && addr ? addr.port : port;
+                resolve(actual);
+            });
+        };
+        attempt(preferredPort);
+    });
+}
 
 async function readJsonBody(req: http.IncomingMessage): Promise<Record<string, unknown>> {
     const chunks: Buffer[] = [];
@@ -302,12 +403,17 @@ function httpPort(): number {
     return Number(p);
 }
 
-/** 供 cocosmcp stdio MCP 调用：127.0.0.1:3921 — health / IR meta / genbot / exec */
-function startHttpBridge() {
-    if (httpDisabled()) return;
+function registryEnabled(): boolean {
+    return process.env.COCOSMCP_HTTP_REGISTRY !== "0";
+}
 
-    const port = httpPort();
+/** 供 cocosmcp stdio MCP 调用 — health / IR meta / genbot / exec；多开时动态端口 + registry */
+async function startHttpBridge() {
+    if (httpDisabled()) return;
     if (httpServer) return;
+
+    const preferredPort = httpPort();
+    const projectPath = Editor.Project?.path ?? "";
 
     httpServer = http.createServer((req, res) => {
         const send = (code: number, body: object) => {
@@ -328,7 +434,8 @@ function startHttpBridge() {
                 execModes: ["message", "eval", "scene-script", "scene-eval", "open-url"],
                 sceneExtension: SCENE_EXTENSION_NAME,
                 defaultPreviewPort: DEFAULT_PREVIEW_PORT,
-                projectPath: Editor.Project?.path,
+                projectPath,
+                httpPort: boundPort,
             });
             return;
         }
@@ -380,13 +487,25 @@ function startHttpBridge() {
         send(404, { ok: false, error: "not found" });
     });
 
-    httpServer.listen(port, "127.0.0.1", () => {
+    try {
+        const port = await listenHttpServer(httpServer, preferredPort);
+        boundPort = port;
+        boundProjectPath = projectPath;
         console.log(`[cocos-meta-mcp] MCP HTTP bridge http://127.0.0.1:${port}`);
-    });
+        if (registryEnabled() && projectPath) {
+            upsertBridgeRegistry(projectPath, port);
+            console.log(`[cocos-meta-mcp] bridge registry: ${bridgeRegistryPath()}`);
+        }
+    } catch (e) {
+        console.error("[cocos-meta-mcp] HTTP bridge failed to start", e);
+        httpServer = null;
+        boundPort = null;
+        boundProjectPath = null;
+    }
 }
 
 export function load() {
-    startHttpBridge();
+    void startHttpBridge();
 
     const autoMeta =
         process.env.COCOSMCP_AUTO_META === "1" || process.env.CANDYSTORM_IR_AUTO_META === "1";
@@ -401,6 +520,11 @@ export function load() {
 }
 
 export function unload() {
+    if (boundProjectPath) {
+        removeBridgeRegistry(boundProjectPath);
+        boundProjectPath = null;
+    }
+    boundPort = null;
     if (httpServer) {
         httpServer.close();
         httpServer = null;

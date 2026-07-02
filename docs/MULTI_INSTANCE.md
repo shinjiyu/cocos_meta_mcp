@@ -1,9 +1,36 @@
-# Cocos Creator 多开 — 问题分析
+# Cocos Creator 多开
 
 > 分支：`feat/cocos-multi-instance`  
-> 状态：分析阶段（未实现）
+> 状态：**已实现**（registry + 路由 + 校验）
 
-## 1. 现象与用户诉求
+## 已实现能力
+
+| 组件 | 行为 |
+|------|------|
+| **Creator 扩展** | 优先 `3921`；`EADDRINUSE` 时自动动态端口；`load` 写入 registry，`unload` 注销 |
+| **Registry** | `%LOCALAPPDATA%/cocos-meta-mcp/instances.json`（Win）；`~/.cocos-meta-mcp/`（其他） |
+| **MCP** | `cocosmcp_list_bridges`；`cocosmcp_exec` / `cocosmcp_run_recipe` 可选 `projectRoot` |
+| **校验** | 每次 exec 前 `health.projectPath` 必须匹配目标工程 |
+
+### Agent 跨工程用法
+
+```text
+1. cocosmcp_list_bridges
+2. cocosmcp_exec({ projectRoot: "D:/proj-A", mode: "eval", code: "..." })
+3. cocosmcp_exec({ projectRoot: "D:/proj-B", mode: "eval", code: "..." })
+```
+
+### 环境变量
+
+| 变量 | 说明 |
+|------|------|
+| `COCOSMCP_HTTP_PORT` | 首选端口（默认 3921） |
+| `COCOSMCP_HTTP_REGISTRY=0` | 禁用 registry 写入（旧行为） |
+| `COCOSMCP_REGISTRY_HOME` | 自定义 registry 目录 |
+
+---
+
+## 1. 现象与用户诉求（历史背景）
 
 同时打开多个 Cocos Creator 工程（多开）时，Cursor Agent 通过 `cocosmcp_exec` 发出的命令可能：
 
