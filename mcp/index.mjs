@@ -21,7 +21,7 @@ import { registerRecipeLayerTools } from "./recipe-layer.mjs";
 
 const server = new McpServer({
     name: "cocosmcp",
-    version: "2.3.0",
+    version: "3.0.0",
 });
 
 async function main() {
@@ -47,7 +47,7 @@ async function main() {
     const totalApprox = coreHandles.length + recipeToolCount + pluginToolCount + recipe.promoted.restored.length;
 
     console.error(
-        `[cocosmcp] v2.3 layered ~${totalApprox} tools | Creator ${cocos.version} (${cocos.slug}) | core=${coreHandles.length} recipeL${recipeLayer}=${recipeToolCount} plugins=[${plugins.loaded.join(",") || "none"}](${pluginToolCount}) promoted=${recipe.promoted.restored.length}`,
+        `[cocosmcp] v3.0 layered ~${totalApprox} tools | Creator ${cocos.version} (${cocos.slug}) | core=${coreHandles.length} recipeL${recipeLayer}=${recipeToolCount} plugins=[${plugins.loaded.join(",") || "none"}](${pluginToolCount}) promoted=${recipe.promoted.restored.length}`,
     );
     if (plugins.failed.length) {
         console.error("[cocosmcp] plugin load failed:", JSON.stringify(plugins.failed));

@@ -40,7 +40,7 @@
 
 本地 CI：`node mcp/scripts/verify-tool-schemas.mjs` 断言上述 tool 与字段存在于 `tools/list` JSON Schema。
 
-**常见原因**：Cursor 仍连旧版 npm 包（无 `list_bridges`）或 MCP 未重启 → 更新到 **≥2.3.0** 并 reload。
+**常见原因**：Cursor 仍连旧版 npm 包（无 `list_bridges`）或 MCP 未重启 → 更新到 **≥3.0.0** 并 reload。
 
 ---
 

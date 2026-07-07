@@ -1,7 +1,7 @@
 {
     "name": "cocos-meta-mcp",
-    "version": "2.3.0",
-    "description": "Self-evolving MCP for Cocos Creator — stdio server, project extension, and Cursor setup (recipe promote)",
+    "version": "3.0.0",
+    "description": "Self-evolving MCP for Cocos Creator — multi-instance bridges, Agent Skills, stdio server, extension, and Cursor setup",
     "type": "module",
     "main": "./mcp/index.mjs",
     "bin": {
@@ -41,6 +41,7 @@
         "docs/RECIPES.md",
         "docs/CREATOR_CONSOLE.md",
         "docs/SKILLS.md",
+        "docs/MULTI_INSTANCE.md",
         "docs/NPM.md",
         "docs/NPM.en.md",
         "skills",

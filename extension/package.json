@@ -1,7 +1,7 @@
 {
     "package_version": 2,
     "name": "cocos-meta-mcp",
-    "version": "1.0.0",
+    "version": "3.0.0",
     "title": "CocosMetaMCP",
     "description": "CocosMetaMCP HTTP bridge for Creator (MCP exec, asset meta, refresh)",
     "author": "cocos-meta-mcp",

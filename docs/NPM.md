@@ -2,7 +2,7 @@
 
 [English](NPM.en.md)
 
-包名：**`cocos-meta-mcp`**（v2.1.7+）
+包名：**`cocos-meta-mcp`**（v3.0.0+：多开 bridge、Agent Skills）
 
 包含：
 
