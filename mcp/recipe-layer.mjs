@@ -1,5 +1,7 @@
 import path from "node:path";
 import { z } from "zod";
+import { registerMcpTool } from "./register-tool.mjs";
+import { runRecipeInputSchema } from "./tool-schemas.mjs";
 import {
     computeExecStats,
     deleteRecipe,
@@ -143,13 +145,12 @@ export function registerRecipeLayerTools(server, ctx, recipeLayer) {
     );
 
     handles.push(
-        server.tool(
+        registerMcpTool(
+            server,
             "cocosmcp_run_recipe",
-            "[Recipe L1+] 运行已注册 recipe（无需 promote）。",
             {
-                name: z.string(),
-                params: z.record(z.unknown()).optional(),
-                projectRoot: z.string().optional(),
+                description: "[Recipe L1+] 运行已注册 recipe（无需 promote）。projectRoot 可选，多开时指定目标工程。",
+                inputSchema: runRecipeInputSchema,
             },
             async ({ name, params, projectRoot }) => {
                 const targetRoot = resolveAuditProjectRoot(projectRoot);

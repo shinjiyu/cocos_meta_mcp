@@ -1,9 +1,14 @@
-import { z } from "zod";
 import {
     appendExecAudit,
     buildExecAuditEntry,
     executeCreatorBody,
 } from "./recipe-registry.mjs";
+import { registerMcpTool } from "./register-tool.mjs";
+import {
+    execInputSchema,
+    healthInputSchema,
+    listBridgesInputSchema,
+} from "./tool-schemas.mjs";
 
 export function registerCoreTools(server, ctx) {
     const {
@@ -15,17 +20,18 @@ export function registerCoreTools(server, ctx) {
         resolveAuditProjectRoot,
     } = ctx;
     const handles = [];
-    const includeHealth = process.env.COCOSMCP_CORE_HEALTH === "1";
+    const includeHealth = process.env.COCOSMCP_CORE_HEALTH !== "0";
 
     handles.push(
-        server.tool(
+        registerMcpTool(
+            server,
             "cocosmcp_list_bridges",
-            [
-                "[Core] 列出本机已注册的 Creator HTTP bridge（多开场景）。",
-                "probe=true 时对每个实例 GET /health，并清理离线条目。",
-            ].join(" "),
             {
-                probe: z.boolean().optional(),
+                description: [
+                    "[Core] 列出本机已注册的 Creator HTTP bridge（多开场景）。",
+                    "probe=true 时对每个实例 GET /health，并清理离线条目。",
+                ].join(" "),
+                inputSchema: listBridgesInputSchema,
             },
             async ({ probe }) => {
                 try {
@@ -61,11 +67,12 @@ export function registerCoreTools(server, ctx) {
 
     if (includeHealth) {
         handles.push(
-            server.tool(
+            registerMcpTool(
+                server,
                 "cocosmcp_health",
-                `检查 ${CREATOR_EXTENSION_NAME} HTTP bridge 是否可达（比 exec 更轻）。可选 projectRoot 指定目标工程。`,
                 {
-                    projectRoot: z.string().optional(),
+                    description: `检查 ${CREATOR_EXTENSION_NAME} HTTP bridge 是否可达（比 exec 更轻）。可选 projectRoot 指定目标工程。`,
+                    inputSchema: healthInputSchema,
                 },
                 async ({ projectRoot }) => {
                     const targetRoot = resolveAuditProjectRoot(projectRoot);
@@ -113,25 +120,17 @@ export function registerCoreTools(server, ctx) {
     }
 
     handles.push(
-        server.tool(
+        registerMcpTool(
+            server,
             "cocosmcp_exec",
-            [
-                `[Core] 在已打开的 Cocos Creator 中执行（需 ${CREATOR_EXTENSION_NAME}）。`,
-                "message/eval=主进程；scene-script/scene-eval=场景；open-url=打开预览。",
-                "projectRoot 可选，用于多开时指定目标工程（默认 MCP cwd）。",
-                "跨工程前先 cocosmcp_list_bridges。",
-            ].join(" "),
             {
-                mode: z.enum(["message", "eval", "scene-script", "scene-eval", "open-url"]),
-                module: z.string().optional(),
-                method: z.string().optional(),
-                name: z.string().optional(),
-                args: z.array(z.unknown()).optional(),
-                messageType: z.enum(["request", "send"]).optional(),
-                code: z.string().optional(),
-                url: z.string().optional(),
-                port: z.number().optional(),
-                projectRoot: z.string().optional(),
+                description: [
+                    `[Core] 在已打开的 Cocos Creator 中执行（需 ${CREATOR_EXTENSION_NAME}）。`,
+                    "message/eval=主进程；scene-script/scene-eval=场景；open-url=打开预览。",
+                    "projectRoot 可选，用于多开时指定目标工程（默认 MCP cwd）。",
+                    "跨工程前先 cocosmcp_list_bridges。",
+                ].join(" "),
+                inputSchema: execInputSchema,
             },
             async ({ mode, module, method, name, args, messageType, code, url, port, projectRoot }) => {
                 const started = Date.now();

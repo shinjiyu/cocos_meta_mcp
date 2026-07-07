@@ -115,6 +115,7 @@ function buildServers({ repo, projectRoot, irRoot, profile }) {
     const pluginEnv = {
         ...baseEnv,
         COCOSMCP_RECIPE_LAYER: "2",
+        // cocosmcp_health 默认启用；禁用: COCOSMCP_CORE_HEALTH=0
     };
 
     const workflow = {

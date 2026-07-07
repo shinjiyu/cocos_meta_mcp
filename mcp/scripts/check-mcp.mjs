@@ -33,4 +33,12 @@ for (const file of files) {
 }
 
 if (failed) {process.exit(1);}
+
+const verify = spawnSync(process.execPath, [path.join(mcpRoot, "scripts", "verify-tool-schemas.mjs")], {
+    stdio: "inherit",
+});
+if (verify.status !== 0) {
+    process.exit(verify.status ?? 1);
+}
+
 console.error(`[typecheck:mcp] ok (${files.length} files)`);

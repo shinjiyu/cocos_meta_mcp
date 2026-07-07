@@ -47,7 +47,7 @@ async function main() {
     const totalApprox = coreHandles.length + recipeToolCount + pluginToolCount + recipe.promoted.restored.length;
 
     console.error(
-        `[cocosmcp] v2.1 layered ~${totalApprox} tools | Creator ${cocos.version} (${cocos.slug}) | core=${coreHandles.length} recipeL${recipeLayer}=${recipeToolCount} plugins=[${plugins.loaded.join(",") || "none"}](${pluginToolCount}) promoted=${recipe.promoted.restored.length}`,
+        `[cocosmcp] v2.3 layered ~${totalApprox} tools | Creator ${cocos.version} (${cocos.slug}) | core=${coreHandles.length} recipeL${recipeLayer}=${recipeToolCount} plugins=[${plugins.loaded.join(",") || "none"}](${pluginToolCount}) promoted=${recipe.promoted.restored.length}`,
     );
     if (plugins.failed.length) {
         console.error("[cocosmcp] plugin load failed:", JSON.stringify(plugins.failed));

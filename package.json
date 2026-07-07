@@ -12,6 +12,8 @@
         "LICENSE",
         "mcp/index.mjs",
         "mcp/core.mjs",
+        "mcp/register-tool.mjs",
+        "mcp/tool-schemas.mjs",
         "mcp/context.mjs",
         "mcp/cocos-version.mjs",
         "mcp/cocos-version-range.mjs",

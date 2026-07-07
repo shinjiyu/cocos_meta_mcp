@@ -27,6 +27,20 @@
 | `COCOSMCP_HTTP_PORT` | 首选端口（默认 3921） |
 | `COCOSMCP_HTTP_REGISTRY=0` | 禁用 registry 写入（旧行为） |
 | `COCOSMCP_REGISTRY_HOME` | 自定义 registry 目录 |
+| `COCOSMCP_CORE_HEALTH=0` | 禁用 `cocosmcp_health`（默认启用） |
+
+### Cursor MCP 验收（修 schema 后）
+
+1. Cursor → MCP → **Restart** `cocosmcp`（或 disable/enable）
+2. 工具列表应含 **`cocosmcp_list_bridges`**；`cocosmcp_exec` / `cocosmcp_run_recipe` 的 inputSchema 含 **`projectRoot`**
+3. 双 Creator 开着时：
+   - `cocosmcp_list_bridges` → 2 条 instance
+   - `cocosmcp_exec({ projectRoot: "D:/workspace/symbolEditor", ... })` → 对应 bridge（如 63733）
+   - `cocosmcp_exec({ projectRoot: "D:/workspace/testAutoCopy", ... })` → 对应 bridge（如 3921）
+
+本地 CI：`node mcp/scripts/verify-tool-schemas.mjs` 断言上述 tool 与字段存在于 `tools/list` JSON Schema。
+
+**常见原因**：Cursor 仍连旧版 npm 包（无 `list_bridges`）或 MCP 未重启 → 更新到 **≥2.3.0** 并 reload。
 
 ---
 
