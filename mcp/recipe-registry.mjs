@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import { validateBridgeProject } from "./bridge-registry.mjs";
-import { CREATOR_EXTENSION_NAME, PROJECT_ROOT } from "./context.mjs";
+import { CREATOR_EXTENSION_NAME, resolveTargetProjectRoot } from "./context.mjs";
 import { promotedRecipeToolName } from "./tool-naming.mjs";
 
 const RECIPE_NAME_RE = /^[a-z][a-z0-9_]{0,63}$/;
@@ -356,7 +356,14 @@ export function buildRecipeExecBody(recipe, params = {}) {
 }
 
 export async function executeCreatorBody(fetchCreatorBridge, body, { projectRoot } = {}) {
-    const targetRoot = projectRoot ?? PROJECT_ROOT;
+    let targetRoot = projectRoot;
+    if (!targetRoot) {
+        const resolved = await resolveTargetProjectRoot();
+        if (!resolved.ok) {
+            return { ok: false, error: resolved.error, instances: resolved.instances, hint: resolved.hint };
+        }
+        targetRoot = resolved.projectRoot;
+    }
     const health = await fetchCreatorBridge("/health", "GET", undefined, { projectRoot: targetRoot });
     if (!health.ok) {
         return {
@@ -436,7 +443,10 @@ export function registerPromotedRecipeTool(server, projectRoot, recipeName, fetc
         throw new Error(`tool already promoted: ${finalToolName}`);
     }
 
-    const inputSchema = buildZodInputSchema(recipe.params);
+    const inputSchema = {
+        projectRoot: z.string().optional().describe("多开时指定目标工程；省略则用当前工程。"),
+        ...buildZodInputSchema(recipe.params),
+    };
     const handle = server.registerTool(
         finalToolName,
         {
@@ -444,7 +454,17 @@ export function registerPromotedRecipeTool(server, projectRoot, recipeName, fetc
             inputSchema,
         },
         async (params) => {
-            const result = await runRecipe(projectRoot, recipeName, params ?? {}, fetchCreatorBridge);
+            const { projectRoot: execRoot, ...recipeParams } = params ?? {};
+            const resolved = await resolveTargetProjectRoot(execRoot);
+            if (!resolved.ok) {
+                return {
+                    content: [{ type: "text", text: JSON.stringify(resolved, null, 2) }],
+                    isError: true,
+                };
+            }
+            const result = await runRecipe(projectRoot, recipeName, recipeParams, fetchCreatorBridge, {
+                execProjectRoot: resolved.projectRoot,
+            });
             return {
                 content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
                 isError: !result.ok,

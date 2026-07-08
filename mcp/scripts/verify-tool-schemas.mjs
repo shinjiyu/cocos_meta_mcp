@@ -11,9 +11,11 @@ import { toolInputJsonSchema } from "../register-tool.mjs";
 
 const REQUIRED = {
     cocosmcp_list_bridges: { properties: ["probe"] },
+    cocosmcp_use_project: { properties: ["projectRoot"] },
     cocosmcp_exec: { properties: ["mode", "projectRoot"] },
     cocosmcp_run_recipe: { properties: ["name", "projectRoot"] },
     cocosmcp_health: { properties: ["projectRoot"] },
+    cocosmcp_list_recipes: { properties: ["projectRoot"] },
 };
 
 function main() {

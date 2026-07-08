@@ -17,9 +17,18 @@ import {
 export function registerRecipeLayerTools(server, ctx, recipeLayer) {
     if (recipeLayer < 1) {return { handles: [], promoted: { restored: [], failed: [] } };}
 
-    const { PROJECT_ROOT, fetchCreatorBridge, resolveAuditProjectRoot } = ctx;
+    const { PROJECT_ROOT, fetchCreatorBridge, resolveTargetProjectRoot, resolveProjectRootSync } = ctx;
     const handles = [];
     const allowPromote = recipeLayer >= 2;
+
+    /** recipes/审计存储跟随当前目标工程（多开会话切换后自动改路径）。 */
+    async function recipeRoot(projectRoot) {
+        const resolved = await resolveTargetProjectRoot(projectRoot);
+        if (!resolved.ok) {
+            throw new Error(resolved.error);
+        }
+        return resolved.projectRoot;
+    }
 
     handles.push(
         server.tool(
@@ -27,24 +36,28 @@ export function registerRecipeLayerTools(server, ctx, recipeLayer) {
             "[Recipe L1+] 分析 exec/recipe 审计日志，供 Agent 决定是否注册 recipe。",
             {
                 limit: z.number().optional(),
+                projectRoot: z.string().optional(),
             },
-            async ({ limit }) => ({
-                content: [
-                    {
-                        type: "text",
-                        text: JSON.stringify(
-                            {
-                                recipeLayer,
-                                promoteEnabled: allowPromote,
-                                auditPath: path.join(PROJECT_ROOT, ".cocosmcp", "exec-audit.jsonl"),
-                                ...computeExecStats(PROJECT_ROOT, { limit: limit ?? 2000 }),
-                            },
-                            null,
-                            2,
-                        ),
-                    },
-                ],
-            }),
+            async ({ limit, projectRoot }) => {
+                const root = await recipeRoot(projectRoot);
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify(
+                                {
+                                    recipeLayer,
+                                    promoteEnabled: allowPromote,
+                                    auditPath: path.join(root, ".cocosmcp", "exec-audit.jsonl"),
+                                    ...computeExecStats(root, { limit: limit ?? 2000 }),
+                                },
+                                null,
+                                2,
+                            ),
+                        },
+                    ],
+                };
+            },
         ),
     );
 
@@ -52,15 +65,20 @@ export function registerRecipeLayerTools(server, ctx, recipeLayer) {
         server.tool(
             "cocosmcp_list_recipes",
             "[Recipe L1+] 列出已注册 recipe 与提升状态（含 Cocos 版本 tool 名）。",
-            {},
-            async () => ({
-                content: [
-                    {
-                        type: "text",
-                        text: JSON.stringify({ projectRoot: PROJECT_ROOT, recipes: listRecipes(PROJECT_ROOT) }, null, 2),
-                    },
-                ],
-            }),
+            {
+                projectRoot: z.string().optional(),
+            },
+            async ({ projectRoot }) => {
+                const root = await recipeRoot(projectRoot);
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify({ projectRoot: root, recipes: listRecipes(root) }, null, 2),
+                        },
+                    ],
+                };
+            },
         ),
     );
 
@@ -98,10 +116,12 @@ export function registerRecipeLayerTools(server, ctx, recipeLayer) {
                 overwrite: z.boolean().optional(),
                 promote: z.boolean().optional(),
                 toolName: z.string().optional(),
+                projectRoot: z.string().optional(),
             },
             async (input) => {
                 try {
-                    const saved = saveRecipe(PROJECT_ROOT, input, { overwrite: !!input.overwrite });
+                    const root = await recipeRoot(input.projectRoot);
+                    const saved = saveRecipe(root, input, { overwrite: !!input.overwrite });
                     let promoted;
                     if (input.promote) {
                         if (!allowPromote) {
@@ -125,7 +145,7 @@ export function registerRecipeLayerTools(server, ctx, recipeLayer) {
                         }
                         promoted = registerPromotedRecipeTool(
                             server,
-                            PROJECT_ROOT,
+                            root,
                             input.name,
                             fetchCreatorBridge,
                             { toolName: input.toolName },
@@ -153,8 +173,8 @@ export function registerRecipeLayerTools(server, ctx, recipeLayer) {
                 inputSchema: runRecipeInputSchema,
             },
             async ({ name, params, projectRoot }) => {
-                const targetRoot = resolveAuditProjectRoot(projectRoot);
-                const result = await runRecipe(PROJECT_ROOT, name, params ?? {}, fetchCreatorBridge, {
+                const targetRoot = await recipeRoot(projectRoot);
+                const result = await runRecipe(targetRoot, name, params ?? {}, fetchCreatorBridge, {
                     execProjectRoot: targetRoot,
                 });
                 return {
@@ -173,10 +193,12 @@ export function registerRecipeLayerTools(server, ctx, recipeLayer) {
                 {
                     name: z.string(),
                     toolName: z.string().optional(),
+                    projectRoot: z.string().optional(),
                 },
-                async ({ name, toolName }) => {
+                async ({ name, toolName, projectRoot }) => {
                     try {
-                        if (!getRecipe(PROJECT_ROOT, name)) {
+                        const root = await recipeRoot(projectRoot);
+                        if (!getRecipe(root, name)) {
                             return {
                                 content: [
                                     {
@@ -189,7 +211,7 @@ export function registerRecipeLayerTools(server, ctx, recipeLayer) {
                         }
                         const promoted = registerPromotedRecipeTool(
                             server,
-                            PROJECT_ROOT,
+                            root,
                             name,
                             fetchCreatorBridge,
                             { toolName },
@@ -211,10 +233,10 @@ export function registerRecipeLayerTools(server, ctx, recipeLayer) {
             server.tool(
                 "cocosmcp_demote_recipe",
                 "[Recipe L2] 取消 recipe 的 MCP tool 提升。",
-                { name: z.string() },
-                async ({ name }) => {
+                { name: z.string(), projectRoot: z.string().optional() },
+                async ({ name, projectRoot }) => {
                     try {
-                        const result = demotePromotedRecipeTool(server, PROJECT_ROOT, name);
+                        const result = demotePromotedRecipeTool(server, await recipeRoot(projectRoot), name);
                         return {
                             content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
                             isError: !result.ok,
@@ -233,14 +255,15 @@ export function registerRecipeLayerTools(server, ctx, recipeLayer) {
             server.tool(
                 "cocosmcp_unregister_recipe",
                 "[Recipe L2] 删除 recipe（已提升会先 demote）。",
-                { name: z.string() },
-                async ({ name }) => {
+                { name: z.string(), projectRoot: z.string().optional() },
+                async ({ name, projectRoot }) => {
                     try {
-                        const recipe = getRecipe(PROJECT_ROOT, name);
+                        const root = await recipeRoot(projectRoot);
+                        const recipe = getRecipe(root, name);
                         if (recipe?.promoted) {
-                            demotePromotedRecipeTool(server, PROJECT_ROOT, name);
+                            demotePromotedRecipeTool(server, root, name);
                         }
-                        const deleted = deleteRecipe(PROJECT_ROOT, name);
+                        const deleted = deleteRecipe(root, name);
                         return {
                             content: [{ type: "text", text: JSON.stringify(deleted, null, 2) }],
                         };
@@ -255,8 +278,9 @@ export function registerRecipeLayerTools(server, ctx, recipeLayer) {
         );
     }
 
+    const promotedRoot = resolveProjectRootSync() ?? PROJECT_ROOT;
     const promoted = allowPromote
-        ? loadPromotedRecipesOnStartup(server, PROJECT_ROOT, fetchCreatorBridge)
+        ? loadPromotedRecipesOnStartup(server, promotedRoot, fetchCreatorBridge)
         : { restored: [], failed: [] };
 
     return { handles, promoted };

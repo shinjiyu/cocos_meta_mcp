@@ -95,18 +95,17 @@ function resolveMcpLaunch(repo) {
     return { command: "node", args: [indexMjs] };
 }
 
-function mcpServerBlock({ repo, projectRoot, env }) {
+function mcpServerBlock({ repo, env }) {
     const launch = resolveMcpLaunch(repo);
+    // 不写 cwd：Cursor 不保证遵守；目标工程由 registry 自动探测 / cocosmcp_use_project / projectRoot 决定。
     return {
         command: launch.command,
         ...(launch.args.length ? { args: launch.args } : {}),
-        cwd: normalizePath(projectRoot),
         env,
     };
 }
 
-function buildServers({ repo, projectRoot, irRoot, profile }) {
-    const cwd = normalizePath(projectRoot);
+function buildServers({ repo, irRoot, profile }) {
     const baseEnv = {};
     if (irRoot) {
         baseEnv.COCOSMCP_IR_ROOT = normalizePath(irRoot);
@@ -120,8 +119,8 @@ function buildServers({ repo, projectRoot, irRoot, profile }) {
 
     const workflow = {
         cocosmcp: {
-            comment: "CocosMetaMCP — recipe L2 + plugins (load.json)",
-            ...mcpServerBlock({ repo, projectRoot: cwd, env: pluginEnv }),
+            comment: "CocosMetaMCP — multi-project (use_project/projectRoot), recipe L2 + plugins",
+            ...mcpServerBlock({ repo, env: pluginEnv }),
         },
     };
 
@@ -134,7 +133,6 @@ function buildServers({ repo, projectRoot, irRoot, profile }) {
             return {
                 cocosmcp: mcpServerBlock({
                     repo,
-                    projectRoot: cwd,
                     env: { ...baseEnv, COCOSMCP_RECIPE_LAYER: "0" },
                 }),
             };

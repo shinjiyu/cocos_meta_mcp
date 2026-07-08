@@ -350,7 +350,7 @@ export async function loadPlugin(server, ctx, pluginId) {
         return { ok: true, pluginId, alreadyLoaded: true, ...loaded.get(pluginId) };
     }
 
-    const projectRoot = ctx.PROJECT_ROOT;
+    const projectRoot = ctx.resolveProjectRootSync?.() ?? ctx.PROJECT_ROOT;
     await ensurePluginInstalled(projectRoot, pluginId, ctx);
 
     const catalogDir = resolveCatalogPluginDir(pluginId, MCP_ROOT);
@@ -446,6 +446,7 @@ export function registerPluginManagementTools(server, ctx, { recipeLayer }) {
     if (recipeLayer < 1) {return [];}
 
     const { PROJECT_ROOT } = ctx;
+    const pluginRoot = () => ctx.resolveProjectRootSync?.() ?? PROJECT_ROOT;
     const handles = [];
 
     handles.push(
@@ -454,20 +455,21 @@ export function registerPluginManagementTools(server, ctx, { recipeLayer }) {
             "列出内置/已全量安装到工程的插件（.cocosmcp/installed/），含 Cocos 版本与 versioned tool 名。",
             {},
             async () => {
-                const cfg = readPluginsConfig(PROJECT_ROOT);
+                const root = pluginRoot();
+                const cfg = readPluginsConfig(root);
                 return {
                     content: [
                         {
                             type: "text",
                             text: JSON.stringify(
                                 {
-                                    projectRoot: PROJECT_ROOT,
-                                    configPath: pluginsConfigPath(PROJECT_ROOT),
-                                    installedRoot: installedRoot(PROJECT_ROOT),
+                                    projectRoot: root,
+                                    configPath: pluginsConfigPath(root),
+                                    installedRoot: installedRoot(root),
                                     envPlugins: process.env.COCOSMCP_PLUGINS ?? "",
                                     config: cfg,
-                                    available: listAvailablePlugins(PROJECT_ROOT),
-                                    enabled: resolveEnabledPluginIds(PROJECT_ROOT),
+                                    available: listAvailablePlugins(root),
+                                    enabled: resolveEnabledPluginIds(root),
                                     loaded: getLoadedPluginIds(),
                                 },
                                 null,
@@ -490,12 +492,13 @@ export function registerPluginManagementTools(server, ctx, { recipeLayer }) {
             },
             async ({ pluginId, load = true }) => {
                 try {
-                    const installed = await installPluginFull(PROJECT_ROOT, pluginId, ctx);
+                    const root = pluginRoot();
+                    const installed = await installPluginFull(root, pluginId, ctx);
                     let loadedResult;
                     if (load) {
                         loadedResult = await loadPlugin(server, ctx, pluginId);
                     } else {
-                        enablePluginPersist(PROJECT_ROOT, pluginId, {
+                        enablePluginPersist(root, pluginId, {
                             cocosCreatorVersion: installed.cocosCreatorVersion,
                             cocosVersionSlug: installed.cocosVersionSlug,
                             toolsVersioned: installed.toolsVersioned,
@@ -528,9 +531,10 @@ export function registerPluginManagementTools(server, ctx, { recipeLayer }) {
             },
             async ({ pluginId }) => {
                 try {
-                    const installed = await ensurePluginInstalled(PROJECT_ROOT, pluginId, ctx);
+                    const root = pluginRoot();
+                    const installed = await ensurePluginInstalled(root, pluginId, ctx);
                     const loadedResult = await loadPlugin(server, ctx, pluginId);
-                    const cfg = enablePluginPersist(PROJECT_ROOT, pluginId, {
+                    const cfg = enablePluginPersist(root, pluginId, {
                         cocosCreatorVersion: installed.cocosCreatorVersion ?? loadedResult.cocosCreatorVersion,
                         toolsVersioned: loadedResult.toolNames,
                     });
@@ -561,7 +565,7 @@ export function registerPluginManagementTools(server, ctx, { recipeLayer }) {
             },
             async ({ pluginId }) => {
                 const unloaded = unloadPlugin(pluginId);
-                const cfg = disablePluginPersist(PROJECT_ROOT, pluginId);
+                const cfg = disablePluginPersist(pluginRoot(), pluginId);
                 return {
                     content: [
                         {

@@ -5,6 +5,10 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import {
     listBridgeInstances,
+    normalizeProjectPath,
+    probeBridgeHealth,
+    bridgeUrlForPort,
+    readRegistry,
     resolveBridgeUrl,
 } from "./bridge-registry.mjs";
 
@@ -19,11 +23,57 @@ async function loadGenbotRunner() {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const MCP_ROOT = __dirname;
-export const PROJECT_ROOT = path.resolve(
-    process.env.COCOSMCP_PROJECT_ROOT ||
-        process.env.CANDYSTORM_PROJECT_ROOT ||
-        process.cwd(),
-);
+
+/** cwd 是否像 Cocos Creator 工程根（assets/ + settings/ 或 project.json）。 */
+export function looksLikeCocosProject(dir) {
+    try {
+        return (
+            (fs.existsSync(path.join(dir, "assets")) && fs.existsSync(path.join(dir, "settings"))) ||
+            fs.existsSync(path.join(dir, "project.json"))
+        );
+    } catch {
+        return false;
+    }
+}
+
+function initialProjectRoot() {
+    const explicit = process.env.COCOSMCP_PROJECT_ROOT || process.env.CANDYSTORM_PROJECT_ROOT;
+    if (explicit) {
+        return path.resolve(explicit);
+    }
+    // Cursor 等客户端不保证遵守 mcp.json 的 cwd（可能落在 home 目录），
+    // 只有 cwd 看起来像 Cocos 工程时才采纳，否则留空走 registry 自动探测。
+    const cwd = process.cwd();
+    return looksLikeCocosProject(cwd) ? path.resolve(cwd) : null;
+}
+
+/** 会话级"当前工程"。null 表示未定，届时按 registry 自动探测。 */
+let currentProjectRoot = initialProjectRoot();
+
+export function getProjectRoot() {
+    return currentProjectRoot;
+}
+
+/** 同步 best-effort：当前工程，否则 registry 唯一实例（不探测），否则 null。 */
+export function resolveProjectRootSync() {
+    if (currentProjectRoot) {
+        return currentProjectRoot;
+    }
+    const entries = Object.values(readRegistry().instances ?? {});
+    if (entries.length === 1) {
+        currentProjectRoot = path.resolve(entries[0].projectPath);
+        return currentProjectRoot;
+    }
+    return null;
+}
+
+export function setProjectRoot(root) {
+    currentProjectRoot = path.resolve(root);
+    return currentProjectRoot;
+}
+
+/** 兼容旧引用：启动时的默认工程（可能为 process.cwd()，仅作展示/遗留路径用途）。 */
+export const PROJECT_ROOT = currentProjectRoot ?? path.resolve(process.cwd());
 export const DEFAULT_IR_ROOT = "D:/svn/new_game/糖果风暴客户端资源/export/cocosmcp_ir";
 export const GAME_ART_ROOT = path.join(PROJECT_ROOT, "assets/asset_bundles/game_art/ab/candystorm");
 export const CREATOR_EXTENSION_NAME = "cocos-meta-mcp";
@@ -45,14 +95,66 @@ export function irRoot() {
 }
 
 export function resolveAuditProjectRoot(projectRoot) {
-    return path.resolve(projectRoot || PROJECT_ROOT);
+    return path.resolve(projectRoot || currentProjectRoot || PROJECT_ROOT);
+}
+
+/**
+ * 解析目标工程（多开核心）：
+ *   显式 projectRoot → 会话 currentProjectRoot → registry 唯一在线实例（并粘住）。
+ * 多实例且未指定时返回错误，附实例列表提示。
+ */
+export async function resolveTargetProjectRoot(projectRoot, { probe = true } = {}) {
+    if (projectRoot) {
+        return { ok: true, projectRoot: path.resolve(projectRoot), source: "explicit" };
+    }
+    if (currentProjectRoot) {
+        return { ok: true, projectRoot: currentProjectRoot, source: "session" };
+    }
+
+    const entries = Object.values(readRegistry().instances ?? {});
+    if (entries.length === 0) {
+        return {
+            ok: false,
+            error: "no Creator bridge registered",
+            hint: `Open Creator with ${CREATOR_EXTENSION_NAME} extension, or pass projectRoot`,
+        };
+    }
+
+    let candidates = entries;
+    if (entries.length > 1 && probe) {
+        const online = [];
+        for (const entry of entries) {
+            const health = await probeBridgeHealth(bridgeUrlForPort(entry.port));
+            if (health.ok) {
+                online.push(entry);
+            }
+        }
+        candidates = online;
+    }
+
+    if (candidates.length === 1) {
+        currentProjectRoot = path.resolve(candidates[0].projectPath);
+        return { ok: true, projectRoot: currentProjectRoot, source: "registry-auto" };
+    }
+
+    return {
+        ok: false,
+        error: `multiple Creator bridges online (${candidates.length}); specify projectRoot or call cocosmcp_use_project`,
+        instances: candidates.map((e) => ({
+            projectPath: e.projectPath,
+            port: e.port,
+        })),
+    };
 }
 
 export async function resolveBridgeForProject(projectRoot, { probe = false } = {}) {
-    const target = path.resolve(projectRoot || PROJECT_ROOT);
-    return resolveBridgeUrl(target, {
+    const resolved = await resolveTargetProjectRoot(projectRoot, { probe: true });
+    if (!resolved.ok) {
+        return { ok: false, error: resolved.error, hint: resolved.hint, instances: resolved.instances };
+    }
+    return resolveBridgeUrl(resolved.projectRoot, {
         fallbackUrl: CREATOR_BRIDGE,
-        defaultProjectRoot: PROJECT_ROOT,
+        defaultProjectRoot: normalizeProjectPath(resolved.projectRoot),
         probe,
     });
 }
@@ -141,7 +243,7 @@ export async function fetchCreatorBridge(pathname, method = "GET", jsonBody, opt
     };
 }
 
-export async function runGenbotGenerate({ prefab, regenBind = false, dryRun = false, preferEditor = false }) {
+export async function runGenbotGenerate({ prefab, regenBind = false, dryRun = false, preferEditor = false, projectRoot }) {
     const genbot = await loadGenbotRunner();
     if (!genbot) {
         return {
@@ -158,7 +260,12 @@ export async function runGenbotGenerate({ prefab, regenBind = false, dryRun = fa
         resolvePrefabPath,
         runGenbotCli,
     } = genbot;
-    const prefabAbs = resolvePrefabPath(prefab, PROJECT_ROOT);
+    const rootResolved = await resolveTargetProjectRoot(projectRoot);
+    if (!rootResolved.ok) {
+        return { ok: false, error: rootResolved.error, hint: rootResolved.hint, instances: rootResolved.instances };
+    }
+    const targetRoot = rootResolved.projectRoot;
+    const prefabAbs = resolvePrefabPath(prefab, targetRoot);
     if (!fs.existsSync(prefabAbs)) {
         return {
             ok: false,
@@ -167,27 +274,32 @@ export async function runGenbotGenerate({ prefab, regenBind = false, dryRun = fa
         };
     }
 
-    const outputs = expectedGenbotOutputs(PROJECT_ROOT, prefabAbs);
+    const outputs = expectedGenbotOutputs(targetRoot, prefabAbs);
 
     if (preferEditor) {
         try {
-            const health = await fetchCreatorBridge("/health");
+            const health = await fetchCreatorBridge("/health", "GET", undefined, { projectRoot: targetRoot });
             if (health.ok) {
-                const editor = await fetchCreatorBridge("/genbot-generate", "POST", {
-                    prefab: prefab.startsWith("db://")
-                        ? prefab
-                        : `db://assets/${path
-                              .relative(path.join(PROJECT_ROOT, "assets"), prefabAbs)
-                              .replace(/\\/g, "/")}`,
-                    regenBind,
-                });
+                const editor = await fetchCreatorBridge(
+                    "/genbot-generate",
+                    "POST",
+                    {
+                        prefab: prefab.startsWith("db://")
+                            ? prefab
+                            : `db://assets/${path
+                                  .relative(path.join(targetRoot, "assets"), prefabAbs)
+                                  .replace(/\\/g, "/")}`,
+                        regenBind,
+                    },
+                    { projectRoot: targetRoot },
+                );
                 if (editor.ok && editor.body?.ok) {
                     return {
                         ok: true,
                         mode: "editor",
                         prefabAbs,
                         outputs,
-                        registry: readRegistryEntry(PROJECT_ROOT, outputs.prefabName),
+                        registry: readRegistryEntry(targetRoot, outputs.prefabName),
                         editor: editor.body,
                     };
                 }
@@ -197,19 +309,19 @@ export async function runGenbotGenerate({ prefab, regenBind = false, dryRun = fa
         }
     }
 
-    const genbotRoot = resolveGenbotRoot(PROJECT_ROOT);
+    const genbotRoot = resolveGenbotRoot(targetRoot);
     if (!genbotRoot) {
         return {
             ok: false,
             error: "genbot not found in project (extensions/genbot submodule missing or empty)",
-            setup: genbotSetupHint(PROJECT_ROOT),
+            setup: genbotSetupHint(targetRoot),
             prefabAbs,
             outputs,
         };
     }
 
     const r = await runGenbotCli({
-        projectRoot: PROJECT_ROOT,
+        projectRoot: targetRoot,
         prefabPath: prefabAbs,
         genbotRoot,
         regenBind,
@@ -233,7 +345,7 @@ export async function runGenbotGenerate({ prefab, regenBind = false, dryRun = fa
             ...outputs,
             written,
         },
-        registry: readRegistryEntry(PROJECT_ROOT, outputs.prefabName),
+        registry: readRegistryEntry(targetRoot, outputs.prefabName),
         stdout: r.stdout,
         stderr: r.stderr,
     };
@@ -253,6 +365,10 @@ export function createContext() {
         resolveBridgeForProject,
         listBridgeInstances,
         resolveAuditProjectRoot,
+        resolveTargetProjectRoot,
+        resolveProjectRootSync,
+        getProjectRoot,
+        setProjectRoot,
         runGenbotGenerate,
     };
 }

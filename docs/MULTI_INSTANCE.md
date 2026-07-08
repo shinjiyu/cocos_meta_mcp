@@ -1,7 +1,6 @@
 # Cocos Creator 多开
 
-> 分支：`feat/cocos-multi-instance`  
-> 状态：**已实现**（registry + 路由 + 校验）
+> 状态：**已实现**（registry + 路由 + 校验 + 会话切换，v3.1）
 
 ## 已实现能力
 
@@ -9,38 +8,50 @@
 |------|------|
 | **Creator 扩展** | 优先 `3921`；`EADDRINUSE` 时自动动态端口；`load` 写入 registry，`unload` 注销 |
 | **Registry** | `%LOCALAPPDATA%/cocos-meta-mcp/instances.json`（Win）；`~/.cocos-meta-mcp/`（其他） |
-| **MCP** | `cocosmcp_list_bridges`；`cocosmcp_exec` / `cocosmcp_run_recipe` 可选 `projectRoot` |
+| **MCP 路由** | `cocosmcp_list_bridges`；`cocosmcp_use_project`（会话粘性切换）；所有执行类工具可选 `projectRoot` |
+| **默认解析** | 显式 `projectRoot` → 会话当前工程 → registry **唯一在线实例自动选中** → 多实例时明确报错并列出候选 |
+| **不依赖 cwd** | Cursor 不保证遵守 mcp.json `cwd`；仅当 cwd 看起来是 Cocos 工程时才采纳（v3.1 起 install 不再写 cwd） |
 | **校验** | 每次 exec 前 `health.projectPath` 必须匹配目标工程 |
+| **数据隔离** | recipes / exec 审计 / 插件安装均跟随**当前目标工程**的 `.cocosmcp/` |
 
 ### Agent 跨工程用法
 
 ```text
-1. cocosmcp_list_bridges
-2. cocosmcp_exec({ projectRoot: "D:/proj-A", mode: "eval", code: "..." })
-3. cocosmcp_exec({ projectRoot: "D:/proj-B", mode: "eval", code: "..." })
+# 单开：什么都不用传，自动路由到唯一在线实例
+cocosmcp_exec({ mode: "eval", code: "..." })
+
+# 多开：方式一 — 粘性切换（推荐，之后所有工具默认走该工程）
+cocosmcp_list_bridges
+cocosmcp_use_project({ projectRoot: "D:/proj-A" })
+cocosmcp_exec({ mode: "eval", code: "..." })
+
+# 多开：方式二 — 每次调用显式指定（优先级最高）
+cocosmcp_exec({ projectRoot: "D:/proj-B", mode: "eval", code: "..." })
 ```
 
 ### 环境变量
 
 | 变量 | 说明 |
 |------|------|
+| `COCOSMCP_PROJECT_ROOT` | 固定默认工程（一般不需要，交给自动探测/use_project） |
 | `COCOSMCP_HTTP_PORT` | 首选端口（默认 3921） |
 | `COCOSMCP_HTTP_REGISTRY=0` | 禁用 registry 写入（旧行为） |
 | `COCOSMCP_REGISTRY_HOME` | 自定义 registry 目录 |
 | `COCOSMCP_CORE_HEALTH=0` | 禁用 `cocosmcp_health`（默认启用） |
 
-### Cursor MCP 验收（修 schema 后）
+### Cursor MCP 验收
 
-1. Cursor → MCP → **Restart** `cocosmcp`（或 disable/enable）
-2. 工具列表应含 **`cocosmcp_list_bridges`**；`cocosmcp_exec` / `cocosmcp_run_recipe` 的 inputSchema 含 **`projectRoot`**
-3. 双 Creator 开着时：
-   - `cocosmcp_list_bridges` → 2 条 instance
-   - `cocosmcp_exec({ projectRoot: "D:/workspace/symbolEditor", ... })` → 对应 bridge（如 63733）
-   - `cocosmcp_exec({ projectRoot: "D:/workspace/testAutoCopy", ... })` → 对应 bridge（如 3921）
+1. Cursor → MCP → 对 `cocosmcp` **disable 再 enable**（仅 Restart 可能沿用旧工具缓存）
+2. 工具列表应含 **`cocosmcp_list_bridges`**、**`cocosmcp_use_project`**；`cocosmcp_exec` / `cocosmcp_run_recipe` 的 inputSchema 含 **`projectRoot`**
+3. 多 Creator 开着时：
+   - `cocosmcp_list_bridges` → 全部 instance
+   - 不带 projectRoot 的 exec → 报错并列出候选（预期行为）
+   - `cocosmcp_use_project({ projectRoot: ... })` 后 exec → 路由到对应 bridge
+   - 显式 `projectRoot` → 覆盖会话工程
 
 本地 CI：`node mcp/scripts/verify-tool-schemas.mjs` 断言上述 tool 与字段存在于 `tools/list` JSON Schema。
 
-**常见原因**：Cursor 仍连旧版 npm 包（无 `list_bridges`）或 MCP 未重启 → 更新到 **≥3.0.0** 并 reload。
+**常见原因**：Cursor 工具缓存陈旧（重启进程但没刷新 schema）→ disable/enable 该 server 或改动 mcp.json 条目强制刷新；npm 包需 **≥3.1.0**。
 
 ---
 

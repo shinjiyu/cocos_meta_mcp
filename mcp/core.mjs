@@ -8,16 +8,19 @@ import {
     execInputSchema,
     healthInputSchema,
     listBridgesInputSchema,
+    useProjectInputSchema,
 } from "./tool-schemas.mjs";
 
 export function registerCoreTools(server, ctx) {
     const {
-        PROJECT_ROOT,
         CREATOR_BRIDGE,
         CREATOR_EXTENSION_NAME,
         fetchCreatorBridge,
         listBridgeInstances,
-        resolveAuditProjectRoot,
+        resolveTargetProjectRoot,
+        getProjectRoot,
+        setProjectRoot,
+        resolveBridgeForProject,
     } = ctx;
     const handles = [];
     const includeHealth = process.env.COCOSMCP_CORE_HEALTH !== "0";
@@ -45,9 +48,75 @@ export function registerCoreTools(server, ctx) {
                                 type: "text",
                                 text: JSON.stringify(
                                     {
-                                        defaultProjectRoot: PROJECT_ROOT,
+                                        currentProjectRoot: getProjectRoot(),
                                         defaultBridge: CREATOR_BRIDGE,
                                         ...listed,
+                                    },
+                                    null,
+                                    2,
+                                ),
+                            },
+                        ],
+                    };
+                } catch (e) {
+                    return {
+                        content: [{ type: "text", text: JSON.stringify({ ok: false, error: String(e) }, null, 2) }],
+                        isError: true,
+                    };
+                }
+            },
+        ),
+    );
+
+    handles.push(
+        registerMcpTool(
+            server,
+            "cocosmcp_use_project",
+            {
+                description: [
+                    "[Core] 切换当前目标 Cocos 工程（会话级粘性）。",
+                    "之后所有工具默认路由到该工程，无需每次传 projectRoot。",
+                    "先 cocosmcp_list_bridges 查看在线实例。",
+                ].join(" "),
+                inputSchema: useProjectInputSchema,
+            },
+            async ({ projectRoot }) => {
+                try {
+                    const resolved = await resolveBridgeForProject(projectRoot, { probe: true });
+                    if (!resolved.ok) {
+                        return {
+                            content: [
+                                {
+                                    type: "text",
+                                    text: JSON.stringify(
+                                        {
+                                            ok: false,
+                                            projectRoot,
+                                            error: resolved.error ?? "bridge not reachable",
+                                            hint:
+                                                resolved.hint ??
+                                                `Open Creator for this project with ${CREATOR_EXTENSION_NAME}, then retry`,
+                                            instances: resolved.instances,
+                                        },
+                                        null,
+                                        2,
+                                    ),
+                                },
+                            ],
+                            isError: true,
+                        };
+                    }
+                    const current = setProjectRoot(projectRoot);
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: JSON.stringify(
+                                    {
+                                        ok: true,
+                                        currentProjectRoot: current,
+                                        bridge: resolved.url,
+                                        health: resolved.health,
                                     },
                                     null,
                                     2,
@@ -75,7 +144,14 @@ export function registerCoreTools(server, ctx) {
                     inputSchema: healthInputSchema,
                 },
                 async ({ projectRoot }) => {
-                    const targetRoot = resolveAuditProjectRoot(projectRoot);
+                    const resolved = await resolveTargetProjectRoot(projectRoot);
+                    if (!resolved.ok) {
+                        return {
+                            content: [{ type: "text", text: JSON.stringify(resolved, null, 2) }],
+                            isError: true,
+                        };
+                    }
+                    const targetRoot = resolved.projectRoot;
                     try {
                         const health = await fetchCreatorBridge("/health", "GET", undefined, {
                             projectRoot: targetRoot,
@@ -134,7 +210,14 @@ export function registerCoreTools(server, ctx) {
             },
             async ({ mode, module, method, name, args, messageType, code, url, port, projectRoot }) => {
                 const started = Date.now();
-                const targetRoot = resolveAuditProjectRoot(projectRoot);
+                const resolvedRoot = await resolveTargetProjectRoot(projectRoot);
+                if (!resolvedRoot.ok) {
+                    return {
+                        content: [{ type: "text", text: JSON.stringify(resolvedRoot, null, 2) }],
+                        isError: true,
+                    };
+                }
+                const targetRoot = resolvedRoot.projectRoot;
                 try {
                     const body = { mode, module, method, name, args, messageType, code, url, port };
                     const result = await executeCreatorBody(fetchCreatorBridge, body, { projectRoot: targetRoot });

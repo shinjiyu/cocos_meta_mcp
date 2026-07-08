@@ -21,25 +21,27 @@ import { registerRecipeLayerTools } from "./recipe-layer.mjs";
 
 const server = new McpServer({
     name: "cocosmcp",
-    version: "3.0.0",
+    version: "3.1.0",
 });
 
 async function main() {
     const ctx = createContext();
     const recipeLayer = resolveRecipeLayer();
-    const cocos = await resolveCocosVersion(PROJECT_ROOT, ctx.fetchCreatorBridge);
+    // Cursor 不保证遵守 mcp.json cwd：优先会话工程/registry 唯一实例，退回 cwd。
+    const startupRoot = ctx.resolveProjectRootSync() ?? PROJECT_ROOT;
+    const cocos = await resolveCocosVersion(startupRoot, ctx.fetchCreatorBridge);
 
     const coreHandles = registerCoreTools(server, ctx);
     const recipe = registerRecipeLayerTools(server, ctx, recipeLayer);
     registerPluginManagementTools(server, ctx, { recipeLayer });
 
-    const pluginIds = resolveEnabledPluginIds(PROJECT_ROOT);
+    const pluginIds = resolveEnabledPluginIds(startupRoot);
     const plugins = await loadPlugins(server, ctx, pluginIds);
 
     const transport = new StdioServerTransport();
     await server.connect(transport);
 
-    const installed = listInstalledPlugins(PROJECT_ROOT);
+    const installed = listInstalledPlugins(startupRoot);
     const pluginToolCount = installed
         .filter((p) => plugins.loaded.includes(p.id))
         .reduce((n, p) => n + (p.tools?.length ?? 0), 0);
@@ -47,7 +49,7 @@ async function main() {
     const totalApprox = coreHandles.length + recipeToolCount + pluginToolCount + recipe.promoted.restored.length;
 
     console.error(
-        `[cocosmcp] v3.0 layered ~${totalApprox} tools | Creator ${cocos.version} (${cocos.slug}) | core=${coreHandles.length} recipeL${recipeLayer}=${recipeToolCount} plugins=[${plugins.loaded.join(",") || "none"}](${pluginToolCount}) promoted=${recipe.promoted.restored.length}`,
+        `[cocosmcp] v3.1 layered ~${totalApprox} tools | project=${ctx.getProjectRoot() ?? "(auto)"} | Creator ${cocos.version} (${cocos.slug}) | core=${coreHandles.length} recipeL${recipeLayer}=${recipeToolCount} plugins=[${plugins.loaded.join(",") || "none"}](${pluginToolCount}) promoted=${recipe.promoted.restored.length}`,
     );
     if (plugins.failed.length) {
         console.error("[cocosmcp] plugin load failed:", JSON.stringify(plugins.failed));

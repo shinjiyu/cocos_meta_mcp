@@ -1,6 +1,6 @@
 {
     "name": "cocos-meta-mcp",
-    "version": "3.0.0",
+    "version": "3.1.0",
     "description": "Self-evolving MCP for Cocos Creator — multi-instance bridges, Agent Skills, stdio server, extension, and Cursor setup",
     "type": "module",
     "main": "./mcp/index.mjs",

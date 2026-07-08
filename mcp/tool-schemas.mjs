@@ -4,7 +4,13 @@ import { z } from "zod";
 export const projectRootField = z
     .string()
     .optional()
-    .describe("多开时指定目标工程绝对路径；省略则使用 MCP cwd。");
+    .describe("多开时指定目标工程绝对路径；省略则用当前工程（唯一在线实例会自动选中）。");
+
+export const useProjectInputSchema = z.object({
+    projectRoot: z
+        .string()
+        .describe("要切换到的 Cocos 工程绝对路径（后续调用默认路由到该工程）。"),
+});
 
 export const listBridgesInputSchema = z.object({
     probe: z
