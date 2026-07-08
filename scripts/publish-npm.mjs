@@ -34,16 +34,20 @@ if (!token) {
     process.exit(1);
 }
 
-const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
 const npmrc = path.join(root, ".npmrc.publish.tmp");
 fs.writeFileSync(npmrc, `//registry.npmjs.org/:_authToken=${token}\n`, "utf8");
 
 try {
-    const r = spawnSync(npmCmd, ["publish", "--access", "public", "--userconfig", npmrc], {
+    // shell:true — Node ≥18.20 禁止直接 spawn .cmd（CVE-2024-27980）
+    const r = spawnSync("npm", ["publish", "--access", "public", "--userconfig", npmrc], {
         cwd: root,
         stdio: "inherit",
         env: { ...process.env },
+        shell: true,
     });
+    if (r.error) {
+        console.error("[publish-npm] spawn failed:", r.error.message);
+    }
     process.exit(r.status ?? 1);
 } finally {
     try {
