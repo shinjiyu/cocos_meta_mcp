@@ -11,3 +11,6 @@ docs/COMMUNITY_PROMO.md
 mcp/plugins/genbot/
 mcp/plugins/ir-prefab/
 mcp/genbot-runner.mjs
+
+# npm publish token (local only)
+.npm-token
