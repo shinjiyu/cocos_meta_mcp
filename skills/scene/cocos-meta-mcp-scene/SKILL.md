@@ -16,7 +16,19 @@ description: >-
 
 验证连接：`cocosmcp_exec` + `GET /health` 或 `mode: eval` 返回 `Editor.Project.path`。
 
-**单端口限制**：多开时各 Creator 自动注册独立端口；跨工程用 `cocosmcp_list_bridges` + `projectRoot` 参数。
+**多开 Creator 的端口解析**：3921 只是**首个**实例的默认端口，多开工程时每个实例端口不同，硬编码 3921 会连错工程、混命令。
+
+- **MCP 侧（首选）**：`cocosmcp_list_bridges` 列出所有实例；`cocosmcp_exec` / `cocosmcp_use_project` 传正确 `projectRoot`，校验失败会报 mismatch。
+- **脚本侧（兜底）**：端口注册表 `%LOCALAPPDATA%/cocos-meta-mcp/instances.json`（Windows），键为工程根路径（小写、正斜杠归一），值含 `port` / `projectPath`。
+- 连接后**务必**用 `/health` 的 `projectPath` 校验是不是目标工程。
+
+```javascript
+// Node 脚本侧：按工程路径解析端口（不经 MCP 时）
+const reg = JSON.parse(fs.readFileSync(
+  path.join(process.env.LOCALAPPDATA, 'cocos-meta-mcp', 'instances.json'), 'utf8'));
+const key = path.resolve(project).replace(/\\/g, '/').toLowerCase();
+const port = reg.instances?.[key]?.port ?? 3921;
+```
 
 ---
 
@@ -36,8 +48,10 @@ Creator 弹窗条件：**当前 scene 为 dirty 时切换/关闭**。
 
 - 仅 `open-scene` + 改节点但不 `save-scene`
 - 在 dirty 的主场景上直接切场景
-- **手改** `.scene` JSON（`__id__` 错位 → `Open scene failed`）
+- **人工手改** `.scene` JSON（凭手感调 `__id__`/嵌套 → 错位 → `Open scene failed`）
 - **message 模式** + 数组 args 调 `create-node` / `create-component`（常 200 但不生效，见 Skill `creator-scene-editing`）
+
+> 例外：**程序化定向补丁**（按 `__id__` 索引解析后只改指定字段，如 SpriteFrame 引用、UITransform 尺寸）不在此列——它可控、幂等，是 Editor API 不落盘时的正当兜底。约束见下方「工作流 D」。人工凭手感改 JSON 才是被禁止的。
 
 ---
 
@@ -118,6 +132,26 @@ return { ok: true };
 - 在 Creator eval 中：`Editor.Utils.UUID.compressUUID(meta.uuid, false)`
 - 或参考同工程已有 scene 中同类组件的 `__type__` 字符串
 
+### D. 外部数据批量重建（大规模，eval + 磁盘补丁）
+
+适用：从**外部数据源**（如运行时快照、导出的节点表）批量重建成百上千节点。
+本工作流是 **P（本 skill）+ S（外部读取源）的编排**，不是「更强的建场景能力」；
+外部读取（S）与快照格式属于**消费方工程**，本 skill 只沉淀 P 侧在大规模下暴露的
+Editor API 约束与对策。
+
+小规模用工作流 B 即可；下列约束**仅在批量场景下才明显**：
+
+| 约束 | 现象 | 对策 |
+|------|------|------|
+| `set-property` 不落盘 | 绑 SpriteFrame / UITransform 后磁盘 `.scene` 里没写入 | 建树走 eval，**引用类字段用程序化定向补丁**写盘（见上方「例外」）|
+| 重复挂 UITransform 报错 | `create-node` 已自带 `cc.UITransform`，再 `create-component cc.UITransform` 刷屏报错 | 只 `set-property` 改 `contentSize`/`anchorPoint`，**不要**再 create |
+| 补丁被内存覆盖 | 补丁写盘后若在 Creator 内 `save-scene`，内存旧状态回写覆盖补丁 | 补丁阶段**故意不 `save-scene`**；完成后「关闭场景选**不保存**」→ 重新打开 |
+| 零尺寸被吞 | `0×56`、`0×0` 是合法尺寸，`if (w && h)` 会漏写 | 判 `Number.isFinite`，不要用真值判断跳过 |
+
+**反直觉但关键**：常规工作流「改完即存」；批量重建的**磁盘补丁阶段恰恰相反——先不存，靠「不保存关闭 + 重开」让 Editor 读磁盘**。二者不冲突，取决于当前是「Editor 内编辑」还是「外部补丁写盘」。
+
+> S 侧读取、快照 schema、纹理导出/绑定等属于具体工程，应在**消费方工程自己的 skill**里描述（如「Inspector 快照 → Creator 场景」），本 skill 不纳入。
+
 ---
 
 ## 新 scene 的 .meta 模板
@@ -154,6 +188,8 @@ PowerShell：`[guid]::NewGuid().ToString()`。写入 UTF-8 无 BOM。
 
 | 工具 | 用途 |
 |------|------|
+| `cocosmcp_list_bridges` | 列出多开 Creator 实例与端口 |
+| `cocosmcp_use_project` | 切换当前 MCP 目标工程 |
 | `cocosmcp_exec` mode=`eval` | 主进程：fs、Editor.Message、open-scene、save-scene |
 | `cocosmcp_exec` mode=`message` | 等价 `Editor.Message.request(module, method, ...args)` |
 | `cocosmcp_exec` mode=`open-url` | 打开预览 |
@@ -170,9 +206,12 @@ PowerShell：`[guid]::NewGuid().ToString()`。写入 UTF-8 无 BOM。
 | 现象 | 检查 |
 |------|------|
 | 保存弹窗 | 当前 scene dirty？补 `save-scene` 或改用磁盘流程 |
-| MCP 改错工程 | `cocosmcp_list_bridges`；`exec` 传正确 `projectRoot`；校验失败会报 mismatch |
+| MCP 改错工程 | `cocosmcp_list_bridges` + 正确 `projectRoot`；脚本侧查 `instances.json`；校验 `/health` 的 projectPath |
 | 场景黑屏 | 脚本 __type__ 错误；Camera/Layer 配置 |
-| 组件未绑定 | scene 内 `@property` 未 set-property；磁盘 patch 后需 refresh |
+| 组件未绑定 | scene 内 `@property` 未 set-property；批量时 set-property 可能不落盘 → 程序化定向补丁 |
+| 磁盘补丁丢失 | 补丁后在 Creator `save-scene` 覆盖了磁盘 → 改为「不保存关闭 → 重开」 |
+| 纹理被 re-trim | 补丁纹理 `.meta`（如 `trimType:none`）后又 `refresh-asset` → Creator 重新 auto-trim；补丁后勿 refresh 该 PNG |
+| UITransform 报错刷屏 | 对 `create-node` 已自带的 `cc.UITransform` 重复 `create-component` → 改为只 set-property |
 | uuid 冲突 | 复制 scene 时连同 .meta 一起复制 |
 
 ---
